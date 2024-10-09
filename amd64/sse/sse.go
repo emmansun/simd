@@ -289,3 +289,63 @@ func PSLLDQ(dst *XMM, imm byte) {
 	}
 	MOVOU(dst, &tmp)
 }
+
+func PMULHUW(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 8; i++ {
+		e0 := binary.LittleEndian.Uint16(dst.bytes[i*2:])
+		e1 := binary.LittleEndian.Uint16(src.bytes[i*2:])
+		binary.LittleEndian.PutUint16(tmp.bytes[i*2:], uint16(uint32(e0)*uint32(e1)>>16))
+	}
+	MOVOU(dst, &tmp)
+}
+
+func PMULLW(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 8; i++ {
+		e0 := int16(binary.LittleEndian.Uint16(dst.bytes[i*2:]))
+		e1 := int16(binary.LittleEndian.Uint16(src.bytes[i*2:]))
+		binary.LittleEndian.PutUint16(tmp.bytes[i*2:], uint16(e0*e1))
+	}
+	MOVOU(dst, &tmp)
+}
+
+func PSUBUSB(dst, src *XMM) {
+	for i := 0; i < 16; i++ {
+		a := dst.bytes[i]
+		b := src.bytes[i]
+		if a < b {
+			dst.bytes[i] = 0
+		} else {
+			dst.bytes[i] = a - b
+		}
+	}
+}
+
+func PSUBB(dst, src *XMM) {
+	for i := 0; i < 16; i++ {
+		a := dst.bytes[i]
+		b := src.bytes[i]
+		dst.bytes[i] = a - b
+	}
+}
+
+func PADDB(dst, src *XMM) {
+	for i := 0; i < 16; i++ {
+		a := dst.bytes[i]
+		b := src.bytes[i]
+		dst.bytes[i] = a + b
+	}
+}
+
+func PCMPGTB(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 16; i++ {
+		if dst.bytes[i] > src.bytes[i] {
+			tmp.bytes[i] = 0xff
+		} else {
+			tmp.bytes[i] = 0
+		}
+	}
+	MOVOU(dst, &tmp)
+}
