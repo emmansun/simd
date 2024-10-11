@@ -2,6 +2,7 @@ package sse
 
 import (
 	"encoding/binary"
+	"math"
 )
 
 type XMM struct {
@@ -314,6 +315,7 @@ func PSUBUSB(dst, src *XMM) {
 	for i := 0; i < 16; i++ {
 		a := dst.bytes[i]
 		b := src.bytes[i]
+		// SaturateToUnsignedByte
 		if a < b {
 			dst.bytes[i] = 0
 		} else {
@@ -346,6 +348,44 @@ func PCMPGTB(dst, src *XMM) {
 		} else {
 			tmp.bytes[i] = 0
 		}
+	}
+	MOVOU(dst, &tmp)
+}
+
+func PMOVMSKB(src *XMM) uint64 {
+	var ret uint64
+	for i := 0; i < 16; i++ {
+		ret |= uint64(src.bytes[i]>>7) << i
+	}
+	return ret
+}
+
+func SaturateAdd16(x, y int16) int16 {
+	r := int32(x) + int32(y)
+	if r > math.MaxInt16 {
+		return math.MaxInt16
+	} else if r < math.MinInt16 {
+		return math.MinInt16
+	}
+	return int16(r)
+}
+
+func PMADDUBSW(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 8; i++ {
+		// SaturateToSignedWord
+		ret := SaturateAdd16(int16(dst.bytes[i*2])*int16(int8(src.bytes[i*2])), int16(dst.bytes[i*2+1])*int16(int8(src.bytes[i*2+1])))
+		binary.LittleEndian.PutUint16(tmp.bytes[i*2:], uint16(ret))
+	}
+	MOVOU(dst, &tmp)
+}
+
+func PMADDWD(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 4; i++ {
+		ret := int32(int16(binary.LittleEndian.Uint16(dst.bytes[i*4:]))) * int32(int16(binary.LittleEndian.Uint16(src.bytes[i*4:])))
+		ret += int32(int16(binary.LittleEndian.Uint16(dst.bytes[i*4+2:]))) * int32(int16(binary.LittleEndian.Uint16(src.bytes[i*4+2:])))
+		binary.LittleEndian.PutUint32(tmp.bytes[i*4:], uint32(ret))
 	}
 	MOVOU(dst, &tmp)
 }

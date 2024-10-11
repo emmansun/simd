@@ -60,15 +60,6 @@ var aes_sbox = [256]byte{
 var shift_row = Set64(0x0B06010C07020D08, 0x030E09040F0A0500)
 var shift_row_inv = Set64(0x0306090C0F020508, 0x0B0E0104070A0D00)
 var const_0f = Set64(0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F)
-var m1l = Set64(0xC7C1B4B222245157, 0x9197E2E474720701)
-var m1h = Set64(0xF052B91BF95BB012, 0xE240AB09EB49A200)
-var m2l = Set64(0xEDD14478172BBE82, 0x5B67F2CEA19D0834)
-var m2h = Set64(0x11CDBE62CC1063BF, 0xAE7201DD73AFDC00)
-
-var zuc_m1l = Set64(0x3938BBBAA7A62524, 0x1D1C9F9E83820100)
-var zuc_m1h = Set64(0x3DE835E04194499C, 0xA174A97CDD08D500)
-var zuc_m2l = Set64(0x1F0BB5A16E7AC4D0, 0xA8BC0216D9CD7367)
-var zuc_m2h = Set64(0x3FD0A6497F90E609, 0x638CFA1523CCBA55)
 
 func mm_aesenclast_si128(state, rk *XMM) {
 	// ShiftRows
@@ -87,7 +78,7 @@ func AESENCLAST(state, rk *XMM) {
 	mm_aesenclast_si128(state, rk)
 }
 
-func sboxWithAESNI(x, m1l, m1h, m2l, m2h *XMM) {
+func SboxWithAESNI(x, m1l, m1h, m2l, m2h *XMM) {
 	y := &XMM{}
 	z := &XMM{}
 	MOVOU(z, x)
@@ -116,10 +107,10 @@ func sboxWithAESNI(x, m1l, m1h, m2l, m2h *XMM) {
 	PXOR(x, y)
 }
 
-func SM4SBOXWithAESNI(x *XMM) {
-	sboxWithAESNI(x, &m1l, &m1h, &m2l, &m2h)
-}
-
-func ZUCSBOXWithAESNI(x *XMM) {
-	sboxWithAESNI(x, &zuc_m1l, &zuc_m1h, &zuc_m2l, &zuc_m2h)
+func GenLookupTable(m uint64, c byte, ltl, lth *XMM) {
+	mb := Set64(m, m)
+	for i := 0; i < 16; i++ {
+		ltl.bytes[i] = affineByte(mb.bytes[:8], byte(i), c)
+		lth.bytes[i] = affineByte(mb.bytes[:8], byte(i*16), 0)
+	}
 }
