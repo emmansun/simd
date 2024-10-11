@@ -1,9 +1,4 @@
-from pyfinite import ffield
-from pyfinite import genericmatrix
-
-XOR = lambda x,y:x^y
-AND = lambda x,y:x&y
-DIV = lambda x,y:x
+import matrix_util
 
 def field_pow2(x, F):
     return F.Multiply(x, x)
@@ -46,43 +41,6 @@ def gen_X(F, W, W_2, Z, Z_4, Y, Y_16):
     W_2_Z_Y = F.Multiply(F.Multiply(W_2, Z), Y)
     W_Z_Y = F.Multiply(F.Multiply(W, Z), Y)
     return [W_2_Z_4_Y_16, W_Z_4_Y_16, W_2_Z_Y_16, W_Z_Y_16, W_2_Z_4_Y, W_Z_4_Y, W_2_Z_Y, W_Z_Y]
-
-def to_matrix(x):
-    m = genericmatrix.GenericMatrix(size=(8,8), zeroElement=0, identityElement=1, add=XOR, mul=AND, sub=XOR, div=DIV)
-    m.SetRow(0, [(x[0] & 0x80) >> 7, (x[1] & 0x80) >> 7, (x[2] & 0x80) >> 7, (x[3] & 0x80) >> 7, (x[4] & 0x80) >> 7, (x[5] & 0x80) >> 7, (x[6] & 0x80) >> 7, (x[7] & 0x80) >> 7]) 
-    m.SetRow(1, [(x[0] & 0x40) >> 6, (x[1] & 0x40) >> 6, (x[2] & 0x40) >> 6, (x[3] & 0x40) >> 6, (x[4] & 0x40) >> 6, (x[5] & 0x40) >> 6, (x[6] & 0x40) >> 6, (x[7] & 0x40) >> 6]) 
-    m.SetRow(2, [(x[0] & 0x20) >> 5, (x[1] & 0x20) >> 5, (x[2] & 0x20) >> 5, (x[3] & 0x20) >> 5, (x[4] & 0x20) >> 5, (x[5] & 0x20) >> 5, (x[6] & 0x20) >> 5, (x[7] & 0x20) >> 5]) 
-    m.SetRow(3, [(x[0] & 0x10) >> 4, (x[1] & 0x10) >> 4, (x[2] & 0x10) >> 4, (x[3] & 0x10) >> 4, (x[4] & 0x10) >> 4, (x[5] & 0x10) >> 4, (x[6] & 0x10) >> 4, (x[7] & 0x10) >> 4]) 
-    m.SetRow(4, [(x[0] & 0x08) >> 3, (x[1] & 0x08) >> 3, (x[2] & 0x08) >> 3, (x[3] & 0x08) >> 3, (x[4] & 0x08) >> 3, (x[5] & 0x08) >> 3, (x[6] & 0x08) >> 3, (x[7] & 0x08) >> 3]) 
-    m.SetRow(5, [(x[0] & 0x04) >> 2, (x[1] & 0x04) >> 2, (x[2] & 0x04) >> 2, (x[3] & 0x04) >> 2, (x[4] & 0x04) >> 2, (x[5] & 0x04) >> 2, (x[6] & 0x04) >> 2, (x[7] & 0x04) >> 2]) 
-    m.SetRow(6, [(x[0] & 0x02) >> 1, (x[1] & 0x02) >> 1, (x[2] & 0x02) >> 1, (x[3] & 0x02) >> 1, (x[4] & 0x02) >> 1, (x[5] & 0x02) >> 1, (x[6] & 0x02) >> 1, (x[7] & 0x02) >> 1]) 
-    m.SetRow(7, [(x[0] & 0x01) >> 0, (x[1] & 0x01) >> 0, (x[2] & 0x01) >> 0, (x[3] & 0x01) >> 0, (x[4] & 0x01) >> 0, (x[5] & 0x01) >> 0, (x[6] & 0x01) >> 0, (x[7] & 0x01) >> 0]) 
-    return m
-
-def matrix_col_byte(c):
-    return (c[0] << 7) ^ (c[1] << 6) ^ (c[2] << 5) ^ (c[3] << 4) ^ (c[4] << 3) ^ (c[5] << 2) ^ (c[6] << 1) ^ (c[7] << 0)
-
-def matrix_row_byte(c):
-    return (c[0] << 7) ^ (c[1] << 6) ^ (c[2] << 5) ^ (c[3] << 4) ^ (c[4] << 3) ^ (c[5] << 2) ^ (c[6] << 1) ^ (c[7] << 0)
-
-def matrix_cols(m):
-    x = []
-    for i in range(8):
-        c = m.GetColumn(i)
-        x.append(matrix_col_byte(c))
-    return x
-
-def matrix_rows(m):
-    x = []
-    for i in range(8):
-        r = m.GetRow(i)
-        x.append(matrix_row_byte(r))
-    return x
-
-def gen_X_inv(x):
-    m = to_matrix(x)
-    m_inv = m.Inverse()
-    return matrix_cols(m_inv)
 
 def G4_mul(x, y):
     '''
@@ -180,13 +138,3 @@ def G256_new_basis(x, b):
         if x & (1<<((7-i))):
             y ^= b[i]
     return y
-
-def print_m(m):
-    for i, s in enumerate(m):
-        print(f'0x%02x'%s,',', end='')  
-
-def print_sbox(sbox):
-    for i, s in enumerate(sbox):
-        print(f'%02x'%s,',', end='')    
-        if (i+1) % 16 == 0:
-            print()
