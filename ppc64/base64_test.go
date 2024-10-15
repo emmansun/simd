@@ -61,7 +61,7 @@ func encode(src, lut []byte, isPPC64LE bool) (dst []byte) {
 	dst = make([]byte, 16)
 
 	if isPPC64LE {
-		XXPERMDI(X0, X0, 8, X0)
+		XXPERMDI(X0, X0, 2, X0)
 		STXVD2X_PPC64LE(X0, dst)
 	} else {
 		VPERM(X0, X0, rev_bytes, X0)

@@ -246,11 +246,24 @@ func VPERM(src1, src2, perm, dst *Vector128) {
 func XXPERMDI(vA, vB *Vector128, sh byte, dst *Vector128) {
 	sh = sh & 0x0f
 	tmp := Vector128{}
-	for i := sh; i < 16; i++ {
-		tmp.bytes[i-sh] = vA.bytes[i]
-	}
-	for i := 0; i < int(sh); i++ {
-		tmp.bytes[16-int(sh)+i] = vB.bytes[i]
+	d0 := binary.BigEndian.Uint64(vA.bytes[:])
+	d1 := binary.BigEndian.Uint64(vA.bytes[8:])
+	d2 := binary.BigEndian.Uint64(vB.bytes[:])
+	d3 := binary.BigEndian.Uint64(vB.bytes[8:])
+
+	switch sh {
+	case 0:
+		binary.BigEndian.PutUint64(tmp.bytes[:], d0)
+		binary.BigEndian.PutUint64(tmp.bytes[8:], d2)
+	case 1:
+		binary.BigEndian.PutUint64(tmp.bytes[:], d0)
+		binary.BigEndian.PutUint64(tmp.bytes[8:], d3)
+	case 2:
+		binary.BigEndian.PutUint64(tmp.bytes[:], d1)
+		binary.BigEndian.PutUint64(tmp.bytes[8:], d2)
+	case 3:
+		binary.BigEndian.PutUint64(tmp.bytes[:], d1)
+		binary.BigEndian.PutUint64(tmp.bytes[8:], d3)
 	}
 	copy(dst.bytes[:], tmp.bytes[:])
 }
