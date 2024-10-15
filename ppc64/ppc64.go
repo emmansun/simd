@@ -31,6 +31,28 @@ func LXVD2X(rawbytes []byte, dst *Vector128) {
 	copy(dst.bytes[:], rawbytes)
 }
 
+func LXVD2X_PPC64X(rawbytes []byte, dst *Vector128) {
+	for i := 0; i < 8; i++ {
+		dst.bytes[i] = rawbytes[7-i]
+	}
+	for i := 8; i < 16; i++ {
+		dst.bytes[i] = rawbytes[23-i]
+	}
+}
+
+func STXVD2X(v *Vector128, dst []byte) {
+	copy(dst, v.bytes[:])
+}
+
+func STXVD2X_PPC64X(v *Vector128, dst []byte) {
+	for i := 0; i < 8; i++ {
+		dst[i] = v.bytes[7-i]
+	}
+	for i := 8; i < 16; i++ {
+		dst[i] = v.bytes[23-i]
+	}
+}
+
 func LXVD2X_UINT64(ints []uint64, dst *Vector128) {
 	binary.BigEndian.PutUint64(dst.bytes[:], ints[0])
 	binary.BigEndian.PutUint64(dst.bytes[8:], ints[1])
@@ -112,6 +134,13 @@ func VSRB(src, indicator, dst *Vector128) {
 	}
 }
 
+func VSRH(src, indicator, dst *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		ind := indicator.bytes[i+1] & 0x0f
+		binary.BigEndian.PutUint16(dst.bytes[i:], binary.BigEndian.Uint16(src.bytes[i:])>>ind)
+	}
+}
+
 func VSRW(src, indicator, dst *Vector128) {
 	for i := 0; i < 16; i += 4 {
 		ind := indicator.bytes[i+3] & 0x1f
@@ -123,6 +152,13 @@ func VSLB(src, indicator, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		ind := indicator.bytes[i] & 0x7
 		dst.bytes[i] = src.bytes[i] << ind
+	}
+}
+
+func VSLH(src, indicator, dst *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		ind := indicator.bytes[i+1] & 0x0f
+		binary.BigEndian.PutUint16(dst.bytes[i:], binary.BigEndian.Uint16(src.bytes[i:])<<ind)
 	}
 }
 
@@ -187,18 +223,6 @@ func VSLDOI(shb byte, vA, vB, vD *Vector128) {
 	copy(vD.bytes[:], tmp.bytes[:])
 }
 
-func VADDUBM(src1, src2, dst *Vector128) {
-	for i := 0; i < 16; i++ {
-		dst.bytes[i] = src1.bytes[i] + src2.bytes[i]
-	}
-}
-
-func VADDUWM(src1, src2, dst *Vector128) {
-	for i := 0; i < 16; i += 4 {
-		binary.BigEndian.PutUint32(dst.bytes[i:], binary.BigEndian.Uint32(src1.bytes[i:])+binary.BigEndian.Uint32(src2.bytes[i:]))
-	}
-}
-
 func VSRAB(src, indicator, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		ind := indicator.bytes[i] & 0x7
@@ -229,4 +253,24 @@ func XXPERMDI(vA, vB *Vector128, sh byte, dst *Vector128) {
 		tmp.bytes[16-int(sh)+i] = vB.bytes[i]
 	}
 	copy(dst.bytes[:], tmp.bytes[:])
+}
+
+func VCMPGTUB(vB, vA, dst *Vector128) {
+	for i := 0; i < 16; i++ {
+		if vA.bytes[i] > vB.bytes[i] {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
+}
+
+func VCMPEQUB(vB, vA, dst *Vector128) {
+	for i := 0; i < 16; i++ {
+		if vA.bytes[i] == vB.bytes[i] {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
 }

@@ -352,6 +352,18 @@ func PCMPGTB(dst, src *XMM) {
 	MOVOU(dst, &tmp)
 }
 
+func PCMPEQB(dst, src *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 16; i++ {
+		if dst.bytes[i] == src.bytes[i] {
+			tmp.bytes[i] = 0xff
+		} else {
+			tmp.bytes[i] = 0
+		}
+	}
+	MOVOU(dst, &tmp)
+}
+
 func PMOVMSKB(src *XMM) uint64 {
 	var ret uint64
 	for i := 0; i < 16; i++ {
