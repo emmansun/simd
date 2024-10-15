@@ -31,7 +31,7 @@ func LXVD2X(rawbytes []byte, dst *Vector128) {
 	copy(dst.bytes[:], rawbytes)
 }
 
-func LXVD2X_PPC64X(rawbytes []byte, dst *Vector128) {
+func LXVD2X_PPC64LE(rawbytes []byte, dst *Vector128) {
 	for i := 0; i < 8; i++ {
 		dst.bytes[i] = rawbytes[7-i]
 	}
@@ -44,7 +44,7 @@ func STXVD2X(v *Vector128, dst []byte) {
 	copy(dst, v.bytes[:])
 }
 
-func STXVD2X_PPC64X(v *Vector128, dst []byte) {
+func STXVD2X_PPC64LE(v *Vector128, dst []byte) {
 	for i := 0; i < 8; i++ {
 		dst[i] = v.bytes[7-i]
 	}

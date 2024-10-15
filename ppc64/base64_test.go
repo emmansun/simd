@@ -6,12 +6,12 @@ import (
 	"testing"
 )
 
-func encode(src, lut []byte, isPPC64X bool) (dst []byte) {
+func encode(src, lut []byte, isPPC64LE bool) (dst []byte) {
 	X0 := &Vector128{}
 	rev_bytes := &Vector128{}
 
-	if isPPC64X {
-		LXVD2X_PPC64X(src, X0)
+	if isPPC64LE {
+		LXVD2X_PPC64LE(src, X0)
 		LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, rev_bytes)
 		reshuffle_mask := &Vector128{}
 		LXVD2X_UINT64([]uint64{0x0d0c0e0d000f0100, 0x0302040306050706}, reshuffle_mask)
@@ -49,8 +49,8 @@ func encode(src, lut []byte, isPPC64X bool) (dst []byte) {
 	VCMPGTUB(range_0_end, X0, X2)
 	VSUBUBM(X2, X1, X1)
 
-	if isPPC64X {
-		LXVD2X_PPC64X(lut, X2)
+	if isPPC64LE {
+		LXVD2X_PPC64LE(lut, X2)
 		VPERM(X2, X2, rev_bytes, X2)
 	} else {
 		LXVD2X(lut, X2)
@@ -60,9 +60,9 @@ func encode(src, lut []byte, isPPC64X bool) (dst []byte) {
 	VADDUBM(X2, X0, X0)
 	dst = make([]byte, 16)
 
-	if isPPC64X {
+	if isPPC64LE {
 		XXPERMDI(X0, X0, 8, X0)
-		STXVD2X_PPC64X(X0, dst)
+		STXVD2X_PPC64LE(X0, dst)
 	} else {
 		VPERM(X0, X0, rev_bytes, X0)
 		STXVD2X(X0, dst)
@@ -71,8 +71,8 @@ func encode(src, lut []byte, isPPC64X bool) (dst []byte) {
 	return
 }
 
-func encodeSTD(src []byte, isPPC64X bool) ([]byte) {
-	return encode(src, []byte{65, 71, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 237, 240, 0, 0}, isPPC64X)
+func encodeSTD(src []byte, isPPC64LE bool) ([]byte) {
+	return encode(src, []byte{65, 71, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 237, 240, 0, 0}, isPPC64LE)
 }
 
 func TestEncodeSTD(t *testing.T) {
@@ -95,8 +95,8 @@ func TestEncodeSTD(t *testing.T) {
 	}
 }
 
-func encodeURL(src []byte, isPPC64X bool) ([]byte) {
-	return encode(src, []byte{65, 71, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 239, 32, 0, 0}, isPPC64X)
+func encodeURL(src []byte, isPPC64LE bool) ([]byte) {
+	return encode(src, []byte{65, 71, 252, 252, 252, 252, 252, 252, 252, 252, 252, 252, 239, 32, 0, 0}, isPPC64LE)
 }
 
 func TestEncodeURL(t *testing.T) {
@@ -119,10 +119,10 @@ func TestEncodeURL(t *testing.T) {
 	}
 }
 
-func decodeSTD(src []byte, isPPC64X bool) (dst []byte, err error) {
+func decodeSTD(src []byte, isPPC64LE bool) (dst []byte, err error) {
 	X0 := &Vector128{}
-	if isPPC64X {
-		LXVD2X_PPC64X(src, X0)
+	if isPPC64LE {
+		LXVD2X_PPC64LE(src, X0)
 		rev_bytes := &Vector128{}
 		LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, rev_bytes)
 		VPERM(X0, X0, rev_bytes, X0)
@@ -178,10 +178,10 @@ func decodeSTD(src []byte, isPPC64X bool) (dst []byte, err error) {
 
 	dst = make([]byte, 16)
 	dec_reshuffle_mask := &Vector128{}
-	if isPPC64X {
+	if isPPC64LE {
 		LXVD2X_UINT64([]uint64{0x0A09070605030201, 0x000000000f0e0d0b}, dec_reshuffle_mask)
 		VPERM(X0, X0, dec_reshuffle_mask, X0)
-		STXVD2X_PPC64X(X0, dst)
+		STXVD2X_PPC64LE(X0, dst)
 		dst = dst[:12]
 	} else {
 		LXVD2X_UINT64([]uint64{0x010203050607090a, 0x0b0d0e0f00000000}, dec_reshuffle_mask)
@@ -219,10 +219,10 @@ func TestDecodeSTD(t *testing.T) {
 	}
 }
 
-func decodeURL(src []byte, isPPC64X bool) (dst []byte, err error) {
+func decodeURL(src []byte, isPPC64LE bool) (dst []byte, err error) {
 	X0 := &Vector128{}
-	if isPPC64X {
-		LXVD2X_PPC64X(src, X0)
+	if isPPC64LE {
+		LXVD2X_PPC64LE(src, X0)
 		rev_bytes := &Vector128{}
 		LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, rev_bytes)
 		VPERM(X0, X0, rev_bytes, X0)
@@ -278,10 +278,10 @@ func decodeURL(src []byte, isPPC64X bool) (dst []byte, err error) {
 
 	dst = make([]byte, 16)
 	dec_reshuffle_mask := &Vector128{}
-	if isPPC64X {
+	if isPPC64LE {
 		LXVD2X_UINT64([]uint64{0x0A09070605030201, 0x000000000f0e0d0b}, dec_reshuffle_mask)
 		VPERM(X0, X0, dec_reshuffle_mask, X0)
-		STXVD2X_PPC64X(X0, dst)
+		STXVD2X_PPC64LE(X0, dst)
 		dst = dst[:12]
 	} else {
 		LXVD2X_UINT64([]uint64{0x010203050607090a, 0x0b0d0e0f00000000}, dec_reshuffle_mask)
