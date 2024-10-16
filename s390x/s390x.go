@@ -77,6 +77,24 @@ func VREPIB(imm uint8, dst *Vector128) {
 	}
 }
 
+func VREPIH(imm uint16, dst *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		binary.BigEndian.PutUint16(dst.bytes[i:], imm)
+	}
+}
+
+func VREPIF(imm uint32, dst *Vector128) {
+	for i := 0; i < 16; i += 4 {
+		binary.BigEndian.PutUint32(dst.bytes[i:], imm)
+	}
+}
+
+func VREPIG(imm uint64, dst *Vector128) {
+	for i := 0; i < 16; i += 8 {
+		binary.BigEndian.PutUint64(dst.bytes[i:], imm)
+	}
+}
+
 func VREPF(idx uint8, src, dst *Vector128) {
 	idx = idx & 0x03
 	w := binary.BigEndian.Uint32(src.bytes[idx*4:])
@@ -398,7 +416,7 @@ func VECB(src1, src2, dst *Vector128) {
 		b := int8(src2.bytes[i])
 		if b > a {
 			dst.bytes[i] = 1
-		} else if a == b{
+		} else if a == b {
 			dst.bytes[i] = 0
 		} else {
 			dst.bytes[i] = 0xff
@@ -412,7 +430,7 @@ func VECLB(src1, src2, dst *Vector128) {
 		b := src2.bytes[i]
 		if b > a {
 			dst.bytes[i] = 1
-		} else if a == b{
+		} else if a == b {
 			dst.bytes[i] = 0
 		} else {
 			dst.bytes[i] = 0xff
