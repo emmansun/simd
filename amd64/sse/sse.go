@@ -296,7 +296,7 @@ func PMULHUW(dst, src *XMM) {
 	for i := 0; i < 8; i++ {
 		e0 := binary.LittleEndian.Uint16(dst.bytes[i*2:])
 		e1 := binary.LittleEndian.Uint16(src.bytes[i*2:])
-		binary.LittleEndian.PutUint16(tmp.bytes[i*2:], uint16(uint32(e0)*uint32(e1)>>16))
+		binary.LittleEndian.PutUint16(tmp.bytes[i*2:], uint16((uint32(e0)*uint32(e1))>>16))
 	}
 	MOVOU(dst, &tmp)
 }

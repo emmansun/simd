@@ -209,7 +209,7 @@ func TestDecodeSTD(t *testing.T) {
 		if !bytes.Equal(ret, c.out) {
 			t.Errorf("decodeSTD() = %x; want %x", ret, c.out)
 		}
-		ret, err = decodeSTD([]byte(c.in), false)
+		ret, err = decodeSTD([]byte(c.in), true)
 		if err != nil {
 			t.Errorf("decodeSTD() = %v; want nil", err)
 		}
@@ -309,7 +309,7 @@ func TestDecodeURL(t *testing.T) {
 		if !bytes.Equal(ret, c.out) {
 			t.Errorf("decodeURL() = %x; want %x", ret, c.out)
 		}
-		ret, err = decodeURL([]byte(c.in), false)
+		ret, err = decodeURL([]byte(c.in), true)
 		if err != nil {
 			t.Errorf("decodeURL() = %v; want nil", err)
 		}
