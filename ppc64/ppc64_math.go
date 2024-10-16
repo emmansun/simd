@@ -133,13 +133,13 @@ func VADDUWM(src1, src2, dst *Vector128) {
 	}
 }
 
-func VSUBUBM(vB, vA, dst *Vector128) {
+func VSUBUBM(vA, vB, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		dst.bytes[i] = vA.bytes[i] - vB.bytes[i]
 	}
 }
 
-func VSUBUBS(vB, vA, dst *Vector128) {
+func VSUBUBS(vA, vB, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		if vA.bytes[i] < vB.bytes[i] {
 			dst.bytes[i] = 0

@@ -268,7 +268,7 @@ func XXPERMDI(vA, vB *Vector128, sh byte, dst *Vector128) {
 	copy(dst.bytes[:], tmp.bytes[:])
 }
 
-func VCMPGTUB(vB, vA, dst *Vector128) {
+func VCMPGTUB(vA, vB, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		if vA.bytes[i] > vB.bytes[i] {
 			dst.bytes[i] = 0xff
@@ -278,7 +278,7 @@ func VCMPGTUB(vB, vA, dst *Vector128) {
 	}
 }
 
-func VCMPEQUB(vB, vA, dst *Vector128) {
+func VCMPEQUB(vA, vB, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		if vA.bytes[i] == vB.bytes[i] {
 			dst.bytes[i] = 0xff

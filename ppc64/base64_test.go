@@ -42,12 +42,12 @@ func encode(src, lut []byte, isPPC64LE bool) (dst []byte) {
 	VOR(X1, X0, X0)
 	range_1_end := &Vector128{}
 	LXVD2X_UINT64([]uint64{0x3333333333333333, 0x3333333333333333}, range_1_end)
-	VSUBUBS(range_1_end, X0, X1)
+	VSUBUBS(X0, range_1_end, X1)
 	range_0_end := &Vector128{}
 	LXVD2X_UINT64([]uint64{0x1919191919191919, 0x1919191919191919}, range_0_end)
 	X2 := &Vector128{}
-	VCMPGTUB(range_0_end, X0, X2)
-	VSUBUBM(X2, X1, X1)
+	VCMPGTUB(X0, range_0_end, X2)
+	VSUBUBM(X1, X2, X1)
 
 	if isPPC64LE {
 		LXVD2X_PPC64LE(lut, X2)
@@ -157,7 +157,7 @@ func decodeSTD(src []byte, isPPC64LE bool) (dst []byte, err error) {
 
 	base64_nibble_mask := &Vector128{}
 	LXVD2X_UINT64([]uint64{0x2F2F2F2F2F2F2F2F, 0x2F2F2F2F2F2F2F2F}, base64_nibble_mask)
-	VCMPEQUB(X0, base64_nibble_mask, X2)
+	VCMPEQUB(base64_nibble_mask, X0, X2)
 	VADDUBM(X1, X2, X1)
 
 	stddec_lut_roll := &Vector128{}
@@ -257,8 +257,8 @@ func decodeURL(src []byte, isPPC64LE bool) (dst []byte, err error) {
 
 	url_const_5e := &Vector128{}
 	LXVD2X_UINT64([]uint64{0x5E5E5E5E5E5E5E5E, 0x5E5E5E5E5E5E5E5E}, url_const_5e)
-	VCMPGTUB(url_const_5e, X0, X2)
-	VSUBUBM(X2, X1, X1)
+	VCMPGTUB(X0, url_const_5e, X2)
+	VSUBUBM(X1, X2, X1)
 
 	dec_lut_roll := &Vector128{}
 	LXVD2X_UINT64([]uint64{0x00001104BFBFE0B9, 0xB900000000000000}, dec_lut_roll)
