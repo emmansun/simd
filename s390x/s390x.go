@@ -77,18 +77,21 @@ func VREPIB(imm uint8, dst *Vector128) {
 	}
 }
 
+// Do not know the imm boundary
 func VREPIH(imm uint16, dst *Vector128) {
 	for i := 0; i < 16; i += 2 {
 		binary.BigEndian.PutUint16(dst.bytes[i:], imm)
 	}
 }
 
+// Do not know the imm boundary
 func VREPIF(imm uint32, dst *Vector128) {
 	for i := 0; i < 16; i += 4 {
 		binary.BigEndian.PutUint32(dst.bytes[i:], imm)
 	}
 }
 
+// Do not know the imm boundary
 func VREPIG(imm uint64, dst *Vector128) {
 	for i := 0; i < 16; i += 8 {
 		binary.BigEndian.PutUint64(dst.bytes[i:], imm)
@@ -394,6 +397,28 @@ func VMXLB(src1, src2, dst *Vector128) {
 	}
 }
 
+// Vector Minimum
+func VMNB(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i++ {
+		if int8(src2.bytes[i]) < int8(src1.bytes[i]) {
+			dst.bytes[i] = src2.bytes[i]
+		} else {
+			dst.bytes[i] = src1.bytes[i]
+		}
+	}
+}
+
+// Vector Minimum Logical
+func VMNLB(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i++ {
+		if src2.bytes[i] < src1.bytes[i] {
+			dst.bytes[i] = src2.bytes[i]
+		} else {
+			dst.bytes[i] = src1.bytes[i]
+		}
+	}
+}
+
 func VMLHH(src1, src2, dst *Vector128) {
 	for i := 0; i < 8; i++ {
 		e0 := binary.BigEndian.Uint16(src1.bytes[i*2:])
@@ -407,34 +432,6 @@ func VMLHW(src1, src2, dst *Vector128) {
 		e0 := binary.BigEndian.Uint16(src1.bytes[i*2:])
 		e1 := binary.BigEndian.Uint16(src2.bytes[i*2:])
 		binary.BigEndian.PutUint16(dst.bytes[i*2:], uint16(uint32(e0)*uint32(e1)))
-	}
-}
-
-func VECB(src1, src2, dst *Vector128) {
-	for i := 0; i < 16; i++ {
-		a := int8(src1.bytes[i])
-		b := int8(src2.bytes[i])
-		if b > a {
-			dst.bytes[i] = 1
-		} else if a == b {
-			dst.bytes[i] = 0
-		} else {
-			dst.bytes[i] = 0xff
-		}
-	}
-}
-
-func VECLB(src1, src2, dst *Vector128) {
-	for i := 0; i < 16; i++ {
-		a := src1.bytes[i]
-		b := src2.bytes[i]
-		if b > a {
-			dst.bytes[i] = 1
-		} else if a == b {
-			dst.bytes[i] = 0
-		} else {
-			dst.bytes[i] = 0xff
-		}
 	}
 }
 
@@ -470,6 +467,16 @@ func VCEQB(src1, src2, dst *Vector128) {
 			dst.bytes[i] = 0
 		}
 	}
+}
+
+func VCGTB(src1, src2, dst *Vector128) {
+	zero := &Vector128{}
+	VREPIB(0, zero)
+	neg := &Vector128{}
+	VREPIB(0xff, neg)
+	VSB(src1, src2, dst)
+	VMXB(neg, dst, dst)
+	VMNB(zero, dst, dst)
 }
 
 func VMLOB(src1, src2, dst *Vector128) {

@@ -43,9 +43,8 @@ func encode(src, lut []byte) (dst []byte) {
 	VMXB(ZERO, X1, X1)
 
 	VREPIB(0x19, RANGE0_END)
-	VECLB(RANGE0_END, X0, X2) // make assumption that VECLB is correct
-	VMXB(ZERO, X2, X2)
-	VAB(X2, X1, X1)
+	VCGTB(X0, RANGE0_END, X2)
+	VSB(X2, X1, X1)
 
 	VPERM(LUT, LUT, X1, X2)
 	VAB(X2, X0, X0)
@@ -169,7 +168,6 @@ func decodeURL(src []byte) (dst []byte, err error) {
 		dec_reshuffle_const0 = &Vector128{}
 		dec_reshuffle_const1 = &Vector128{}
 		dec_reshuffle_mask   = &Vector128{}
-		ZERO                 = &Vector128{}
 	)
 	VL(src, X0)
 	VREPIB(0x0f, nibble_mask)
@@ -191,13 +189,8 @@ func decodeURL(src []byte) (dst []byte, err error) {
 	}
 
 	VREPIB(0x5e, base64_nibble_mask)
-	VECLB(base64_nibble_mask, X0, X2) // make assumption that VECLB is correct
-	VZERO(ZERO)
-	VMXB(ZERO, X2, X2)
-	VAB(X2, X1, X1)
-
-	VCEQB(X0, base64_nibble_mask, X2)
-	VAB(X2, X1, X1)
+	VCGTB(X0, base64_nibble_mask, X2)
+	VSB(X2, X1, X1)
 
 	VL_UINT64([]uint64{0x00001104BFBFE0B9, 0xB900000000000000}, dec_lut_roll)
 	VPERM(dec_lut_roll, dec_lut_roll, X1, X2)
