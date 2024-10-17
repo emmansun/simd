@@ -62,3 +62,8 @@ func GF2P8AFFINEINVQB(srcdest, src1 *XMM, imm byte) {
 		srcdest.bytes[i] = affineInverseByte(src1.bytes[8:], srcdest.bytes[i], imm)
 	}
 }
+
+func SBOX(inout, m1, m2 *XMM, c1, c2 byte) {
+	GF2P8AFFINEQB(inout, m1, c1)
+	GF2P8AFFINEINVQB(inout, m2, c2)
+}

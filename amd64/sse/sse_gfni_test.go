@@ -24,8 +24,7 @@ func TestAESSBOXWithGFNI2(t *testing.T) {
 	for k := 0; k < 256; k += 16 {
 		SetBytes(dst, []byte{byte(k), byte(k + 1), byte(k + 2), byte(k + 3), byte(k + 4), byte(k + 5), byte(k + 6), byte(k + 7), byte(k + 8), byte(k + 9), byte(k + 10), byte(k + 11), byte(k + 12), byte(k + 13), byte(k + 14), byte(k + 15)})
 		// AES SBOX
-		GF2P8AFFINEQB(dst, &m1, 0x00)
-		GF2P8AFFINEINVQB(dst, &m2, 0x63)
+		SBOX(dst, &m1, &m2, 0, 0x63)
 		for i := 0; i < 16; i++ {
 			if dst.bytes[i] != aes_sbox[k+i] {
 				t.Fatalf("AES SBOX(%v) = %x; want %x", k+i, dst.Bytes()[i], aes_sbox[k+i])
@@ -40,8 +39,7 @@ func testSBOXWithGFNI(t *testing.T, idx int, m1, m2 *XMM, c1, c2 byte, sbox *[25
 	for k := 0; k < 256; k += 16 {
 		SetBytes(dst, []byte{byte(k), byte(k + 1), byte(k + 2), byte(k + 3), byte(k + 4), byte(k + 5), byte(k + 6), byte(k + 7), byte(k + 8), byte(k + 9), byte(k + 10), byte(k + 11), byte(k + 12), byte(k + 13), byte(k + 14), byte(k + 15)})
 		// SBOX
-		GF2P8AFFINEQB(dst, m1, c1)
-		GF2P8AFFINEINVQB(dst, m2, c2)
+		SBOX(dst, m1, m2, c1, c2)
 		for i := 0; i < 16; i++ {
 			if dst.bytes[i] != sbox[k+i] {
 				t.Fatalf("Case %v SBOX(%v) = %x; want %x", idx, k+i, dst.Bytes()[i], sbox[k+i])
