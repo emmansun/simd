@@ -18,6 +18,10 @@ func (m *Vector128) Uint32s() []uint32 {
 	return []uint32{binary.LittleEndian.Uint32(m.bytes[:]), binary.LittleEndian.Uint32(m.bytes[4:]), binary.LittleEndian.Uint32(m.bytes[8:]), binary.LittleEndian.Uint32(m.bytes[12:])}
 }
 
+func (m *Vector128) Uint16s() []uint16 {
+	return []uint16{binary.LittleEndian.Uint16(m.bytes[:]), binary.LittleEndian.Uint16(m.bytes[2:]), binary.LittleEndian.Uint16(m.bytes[4:]), binary.LittleEndian.Uint16(m.bytes[6:]), binary.LittleEndian.Uint16(m.bytes[8:]), binary.LittleEndian.Uint16(m.bytes[10:]), binary.LittleEndian.Uint16(m.bytes[12:]), binary.LittleEndian.Uint16(m.bytes[14:])}
+}
+
 func VMOV(src *Vector128, dst *Vector128) {
 	copy(dst.bytes[:], src.bytes[:])
 }
@@ -30,6 +34,17 @@ func VMOV_S(src, dst *Vector128, from, to byte) {
 
 func VLD1_16B(rawbytes []byte, dst *Vector128) {
 	copy(dst.bytes[:], rawbytes)
+}
+
+func VLD1_8H(v []uint16, dst *Vector128) {
+	binary.LittleEndian.PutUint16(dst.bytes[:], v[0])
+	binary.LittleEndian.PutUint16(dst.bytes[2:], v[1])
+	binary.LittleEndian.PutUint16(dst.bytes[4:], v[2])
+	binary.LittleEndian.PutUint16(dst.bytes[6:], v[3])
+	binary.LittleEndian.PutUint16(dst.bytes[8:], v[4])
+	binary.LittleEndian.PutUint16(dst.bytes[10:], v[5])
+	binary.LittleEndian.PutUint16(dst.bytes[12:], v[6])
+	binary.LittleEndian.PutUint16(dst.bytes[14:], v[7])
 }
 
 func VLD1_4S(v []uint32, dst *Vector128) {
@@ -396,6 +411,66 @@ func VCMHI_B(eq bool, src1, src2, dst *Vector128) {
 	}
 }
 
+// Compare unsigned higher or same (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/CMHS--register---Compare-unsigned-higher-or-same--vector--?lang=en
+func VCMHS_B(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		if src2.bytes[i] >= src1.bytes[i] {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
+}
+
+// Compare bitwise equal (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/CMEQ--register---Compare-bitwise-equal--vector--?lang=en
+func VCMEQ_B(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		if src2.bytes[i] == src1.bytes[i] {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
+}
+
+// Compare signed greater than (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/CMGT--register---Compare-signed-greater-than--vector--?lang=en
+func VCMGT_B(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		if int8(src2.bytes[i]) > int8(src1.bytes[i]) {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
+}
+
+// Compare signed greater than or equal (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/CMGE--register---Compare-signed-greater-than-or-equal--vector--?lang=en
+func VCMGE_B(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		if int8(src2.bytes[i]) >= int8(src1.bytes[i]) {
+			dst.bytes[i] = 0xff
+		} else {
+			dst.bytes[i] = 0
+		}
+	}
+}
+
+// Compare bitwise test bits nonzero (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/CMTST--Compare-bitwise-test-bits-nonzero--vector--?lang=en
+func VCMTST_B(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		if Vm.bytes[i]&Vn.bytes[i] != 0 {
+			Vd.bytes[i] = 0xff
+		} else {
+			Vd.bytes[i] = 0
+		}
+	}
+}
+
 // Unsigned Maximum across Vector.
 // https://developer.arm.com/architectures/instruction-sets/intrinsics/#q=vmaxvq_u8
 // Architectures: A64
@@ -442,6 +517,44 @@ func VZIP2_D(Vm, Vn, dst *Vector128) {
 	VLD1_2D([]uint64{a[1], b[1]}, dst)
 }
 
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/TRN1--Transpose-vectors--primary--?lang=en
+func VTRN1_H(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint16s()
+	b := Vm.Uint16s()
+	VLD1_8H([]uint16{a[0], b[0], a[2], b[2], a[4], b[4], a[6], b[6]}, dst)
+}
+
+func VTRN1_S(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint32s()
+	b := Vm.Uint32s()
+	VLD1_4S([]uint32{a[0], b[0], a[2], b[2]}, dst)
+}
+
+func VTRN1_D(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint64s()
+	b := Vm.Uint64s()
+	VLD1_2D([]uint64{a[0], b[0]}, dst)
+}
+
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/TRN1--Transpose-vectors--primary--?lang=en
+func VTRN2_H(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint16s()
+	b := Vm.Uint16s()
+	VLD1_8H([]uint16{a[1], b[1], a[3], b[3], a[5], b[5], a[7], b[7]}, dst)
+}
+
+func VTRN2_S(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint32s()
+	b := Vm.Uint32s()
+	VLD1_4S([]uint32{a[1], b[1], a[3], b[3]}, dst)
+}
+
+func VTRN2_D(Vm, Vn, dst *Vector128) {
+	a := Vn.Uint64s()
+	b := Vm.Uint64s()
+	VLD1_2D([]uint64{a[1], b[1]}, dst)
+}
+
 // input: from high to low
 // t0 = t0.S3, t0.S2, t0.S1, t0.S0
 // t1 = t1.S3, t1.S2, t1.S1, t1.S0
@@ -469,6 +582,24 @@ func PRE_TRANSPOSE_S(t0, t1, t2, t3 *Vector128) {
 	VZIP2_D(tmp3, tmp2, t3)
 }
 
+// Transpose Matrix with VTRN1/3
+func PRE_TRANSPOSE_S2(t0, t1, t2, t3 *Vector128) {
+	var (
+		tmp0 = &Vector128{}
+		tmp1 = &Vector128{}
+		tmp2 = &Vector128{}
+		tmp3 = &Vector128{}
+	)
+	VTRN1_S(t1, t0, tmp0)
+	VTRN1_S(t3, t2, tmp1)
+	VTRN2_S(t1, t0, tmp2)
+	VTRN2_S(t3, t2, tmp3)
+	VTRN1_D(tmp1, tmp0, t0)
+	VTRN1_D(tmp3, tmp2, t1)
+	VTRN2_D(tmp1, tmp0, t2)
+	VTRN2_D(tmp3, tmp2, t3)
+}
+
 // input: from high to low
 // t0 = t0.S3, t0.S2, t0.S1, t0.S0
 // t1 = t1.S3, t1.S2, t1.S1, t1.S0
@@ -494,6 +625,24 @@ func TRANSPOSE_S(t0, t1, t2, t3 *Vector128) {
 	VZIP2_D(tmp0, tmp1, t1)
 	VZIP1_D(tmp2, tmp3, t2)
 	VZIP2_D(tmp2, tmp3, t3)
+}
+
+// Transpose Matrix with VTRN1/3
+func TRANSPOSE_S2(t0, t1, t2, t3 *Vector128) {
+	var (
+		tmp0 = &Vector128{}
+		tmp1 = &Vector128{}
+		tmp2 = &Vector128{}
+		tmp3 = &Vector128{}
+	)
+	VTRN1_S(t0, t1, tmp0)
+	VTRN1_S(t2, t3, tmp1)
+	VTRN2_S(t0, t1, tmp2)
+	VTRN2_S(t2, t3, tmp3)
+	VTRN1_D(tmp0, tmp1, t0)
+	VTRN1_D(tmp2, tmp3, t1)
+	VTRN2_D(tmp0, tmp1, t2)
+	VTRN2_D(tmp2, tmp3, t3)
 }
 
 func clmul(a, b uint64) (hi, lo uint64) {
@@ -531,4 +680,129 @@ func VPMULL2(Vm, Vn, Vd *Vector128) {
 	hi, lo := clmul(tmp1, tmp2)
 	binary.LittleEndian.PutUint64(Vd.bytes[:], lo)
 	binary.LittleEndian.PutUint64(Vd.bytes[8:], hi)
+}
+
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/ADD--vector---Add--vector--?lang=en
+func VADD_B(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		dst.bytes[i] = src1.bytes[i] + src2.bytes[i]
+	}
+}
+
+func VADD_H(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		a := binary.LittleEndian.Uint16(src1.bytes[i:])
+		b := binary.LittleEndian.Uint16(src2.bytes[i:])
+		binary.LittleEndian.PutUint16(dst.bytes[i:], a+b)
+	}
+}
+
+func VADD_S(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 4 {
+		a := binary.LittleEndian.Uint32(src1.bytes[i:])
+		b := binary.LittleEndian.Uint32(src2.bytes[i:])
+		binary.LittleEndian.PutUint32(dst.bytes[i:], a+b)
+	}
+}
+
+func VADD_D(src1, src2, dst *Vector128) {
+	for i := 0; i < 16; i += 8 {
+		a := binary.LittleEndian.Uint64(src1.bytes[i:])
+		b := binary.LittleEndian.Uint64(src2.bytes[i:])
+		binary.LittleEndian.PutUint64(dst.bytes[i:], a+b)
+	}
+}
+
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/SUB--vector---Subtract--vector--?lang=en
+func VSUB_B(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 1 {
+		Vd.bytes[i] = Vn.bytes[i] - Vm.bytes[i]
+	}
+}
+
+func VSUB_H(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		a := binary.LittleEndian.Uint16(Vm.bytes[i:])
+		b := binary.LittleEndian.Uint16(Vn.bytes[i:])
+		binary.LittleEndian.PutUint16(Vd.bytes[i:], b-a)
+	}
+}
+
+func VSUB_S(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 4 {
+		a := binary.LittleEndian.Uint32(Vm.bytes[i:])
+		b := binary.LittleEndian.Uint32(Vn.bytes[i:])
+		binary.LittleEndian.PutUint32(Vd.bytes[i:], b-a)
+	}
+}
+
+func VSUB_D(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 8 {
+		a := binary.LittleEndian.Uint64(Vm.bytes[i:])
+		b := binary.LittleEndian.Uint64(Vn.bytes[i:])
+		binary.LittleEndian.PutUint64(Vd.bytes[i:], b-a)
+	}
+}
+
+func VMUL_H(Vm, Vn, Vd *Vector128) {
+	for i := 0; i < 16; i += 2 {
+		a := binary.LittleEndian.Uint16(Vm.bytes[i:])
+		b := binary.LittleEndian.Uint16(Vn.bytes[i:])
+		binary.LittleEndian.PutUint16(Vd.bytes[i:], a*b)
+	}
+}
+
+// https://developer.arm.com/documentation/ddi0596/2021-03/SIMD-FP-Instructions/UMULL--UMULL2--vector---Unsigned-Multiply-long--vector--?lang=en
+func UMULL_B(Vm, Vn, Vd *Vector128) {
+	tmp := &Vector128{}
+	for i := 0; i < 8; i++ {
+		a := Vm.bytes[i]
+		b := Vn.bytes[i]
+		binary.LittleEndian.PutUint16(tmp.bytes[2*i:], uint16(a)*uint16(b))
+	}
+	copy(Vd.bytes[:], tmp.bytes[:])
+}
+
+func UMULL2_B(Vm, Vn, Vd *Vector128) {
+	tmp := &Vector128{}
+	for i := 0; i < 8; i++ {
+		a := Vm.bytes[i+8]
+		b := Vn.bytes[i+8]
+		binary.LittleEndian.PutUint16(tmp.bytes[2*i:], uint16(a)*uint16(b))
+	}
+	copy(Vd.bytes[:], tmp.bytes[:])
+}
+
+func UMULL_H(Vm, Vn, Vd *Vector128) {
+	tmp := &Vector128{}
+	for i := 0; i < 8; i += 2 {
+		a := binary.LittleEndian.Uint16(Vm.bytes[i:])
+		b := binary.LittleEndian.Uint16(Vn.bytes[i:])
+		binary.LittleEndian.PutUint32(tmp.bytes[2*i:], uint32(a)*uint32(b))
+	}
+	copy(Vd.bytes[:], tmp.bytes[:])
+}
+
+func UMULL2_H(Vm, Vn, Vd *Vector128) {
+	tmp := &Vector128{}
+	for i := 0; i < 8; i += 2 {
+		a := binary.LittleEndian.Uint16(Vm.bytes[i+8:])
+		b := binary.LittleEndian.Uint16(Vn.bytes[i+8:])
+		binary.LittleEndian.PutUint32(tmp.bytes[2*i:], uint32(a)*uint32(b))
+	}
+	copy(Vd.bytes[:], tmp.bytes[:])
+}
+
+// Add pairwise (vector)
+// https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/ADDP--vector---Add-pairwise--vector--?lang=en
+func VADDP_H(Vm, Vn, Vd *Vector128) {
+	a := Vn.Uint16s()
+	b := Vm.Uint16s()
+	VLD1_8H([]uint16{a[0] + a[1], a[2] + a[3], a[4] + a[5], a[6] + a[7], b[0] + b[1], b[2] + b[3], b[4] + b[5], b[6] + b[7]}, Vd)
+}
+
+func VADDP_S(Vm, Vn, Vd *Vector128) {
+	a := Vn.Uint32s()
+	b := Vm.Uint32s()
+	VLD1_4S([]uint32{a[0] + a[1], a[2] + a[3], b[0] + b[1], b[2] + b[3]}, Vd)
 }
