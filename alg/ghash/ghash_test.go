@@ -88,3 +88,160 @@ func TestSimpleMethod4Bits(t *testing.T) {
 		}
 	}
 }
+
+func TestShoupMethod8BitsMul(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewShoupMethod8Bits(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.Mul(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func TestShoupMethod8BitsMulImpl2(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewShoupMethod8Bits(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.MulImpl2(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func TestShoupMethod4BitsMul(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewShoupMethod4Bits(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.Mul(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func TestShoupMethod4BitsMulImpl2(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewShoupMethod4Bits(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.MulImpl2(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func TestShoupMethod4BitsMulImpl3(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewShoupMethod4Bits(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.MulImpl3(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func TestGCMMethodMul(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewGCMMethod(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.Mul(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
+func BenchmarkRawMethodMul(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	var m rawMethod
+	copy(m.key[:], key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
+
+func BenchmarkSimpleMethod8Bits(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	m := NewSimpleMethod8Bits(key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
+
+func BenchmarkSimpleMethod4Bits(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	m := NewSimpleMethod4Bits(key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
+
+func BenchmarkShoupMethod8Bits(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	m := NewShoupMethod8Bits(key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
+
+func BenchmarkShoupMethod4Bits(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	m := NewShoupMethod4Bits(key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
+
+func BenchmarkGCMMethodMul(b *testing.B) {
+	key, _ := hex.DecodeString("66e94bd4ef8a2c3b884cfa59ca342b2e")
+	m := NewGCMMethod(key)
+	var y [16]byte
+	y1, _ := hex.DecodeString("0388dace60b6a392f328c2b971b2fe78")
+	copy(y[:], y1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		m.Mul(&y)
+	}
+}
