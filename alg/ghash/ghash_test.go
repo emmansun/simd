@@ -159,6 +159,20 @@ func TestShoupMethod4BitsMulImpl3(t *testing.T) {
 	}
 }
 
+func TestGCMRawMethodMul(t *testing.T) {
+	for i, c := range mulCases {
+		key, _ := hex.DecodeString(c.key)
+		m := NewGCMRawMethod(key)
+		var y [16]byte
+		y1, _ := hex.DecodeString(c.y)
+		copy(y[:], y1)
+		m.Mul(&y)
+		if hex.EncodeToString(y[:]) != c.out {
+			t.Errorf("case %d: got %v, want %v", i, hex.EncodeToString(y[:]), c.out)
+		}
+	}
+}
+
 func TestGCMMethodMul(t *testing.T) {
 	for i, c := range mulCases {
 		key, _ := hex.DecodeString(c.key)

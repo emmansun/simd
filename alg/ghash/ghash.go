@@ -370,6 +370,45 @@ type gcmFieldElement struct {
 	low, high uint64
 }
 
+type gcmRawMethod struct {
+	key gcmFieldElement
+}
+
+// gcmRawMethod represents a raw GHASH method, no optimzation with a precomputed lookup table.
+func NewGCMRawMethod(key []byte) *gcmRawMethod {
+	return &gcmRawMethod{
+		key: gcmFieldElement{
+			binary.BigEndian.Uint64(key[:8]),
+			binary.BigEndian.Uint64(key[8:]),
+		},
+	}
+}
+
+func (m *gcmRawMethod) Mul(y *[16]byte) {
+	yField := gcmFieldElement{
+		binary.BigEndian.Uint64(y[:8]),
+		binary.BigEndian.Uint64(y[8:]),
+	}
+	var z gcmFieldElement
+	v := m.key
+	for i := 0; i < 2; i++ {
+		word := yField.low
+		if i == 1 {
+			word = yField.high
+		}
+		for j := 0; j < 64; j++ {
+			if word>>63 == 1 {
+				z = gcmAdd(&z, &v)
+			}
+			// double
+			v = gcmDouble(&v)
+			word <<= 1
+		}
+	}
+	binary.BigEndian.PutUint64(y[:8], z.low)
+	binary.BigEndian.PutUint64(y[8:], z.high)
+}
+
 // It's similar to the Shoup method.
 type gcmMethod struct {
 	productTable [16]gcmFieldElement
