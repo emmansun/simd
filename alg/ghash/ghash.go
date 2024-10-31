@@ -7,6 +7,25 @@ import "encoding/binary"
 // bit is X0, and the rightmost bit is X127.
 // So, bit 0 of X is X[0] >> 7, bit 1 is X[0] >> 6, ..., bit 7 is X[0] & 1, bit 8 is X[1] >> 7, bit 127 is X[15] & 1.
 
+type mulInterface interface {
+	Mul(y *[16]byte)
+}
+
+func ghash(mul mulInterface, T *[16]byte, data []byte) {
+	var v, partialBlock [16]byte
+	for len(data) >= 16 {
+		xor(&v, &v, (*[16]byte)(data))
+		mul.Mul(&v)
+		data = data[16:]
+	}
+	if len(data) > 0 {
+		copy(partialBlock[:], data)
+		xor(&v, &v, &partialBlock)
+		mul.Mul(&v)
+	}
+	copy(T[:], v[:])
+}
+
 // rawMethod represents a raw GHASH method, no optimzation.
 type rawMethod struct {
 	key [16]byte
@@ -54,6 +73,10 @@ func (m *rawMethod) Mul(y *[16]byte) {
 		}
 	}
 	copy(y[:], z[:])
+}
+
+func (m *rawMethod) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
 }
 
 func clear(v *[16]byte) {
@@ -122,6 +145,10 @@ func (m *simpleMethod8Bits) Mul(y *[16]byte) {
 	copy(y[:], z[:])
 }
 
+func (m *simpleMethod8Bits) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
+}
+
 type simpleMethod4Bits struct {
 	key [16]byte
 	m   [32][16][16]byte
@@ -168,6 +195,10 @@ func (m *simpleMethod4Bits) Mul(y *[16]byte) {
 		xor(&z, &z, &m.m[i+1][y[i/2]&0xf])
 	}
 	copy(y[:], z[:])
+}
+
+func (m *simpleMethod4Bits) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
 }
 
 type shoupMethod8Bits struct {
@@ -243,6 +274,10 @@ func (m *shoupMethod8Bits) MulImpl2(y *[16]byte) {
 
 	}
 	copy(y[:], z[:])
+}
+
+func (m *shoupMethod8Bits) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
 }
 
 type shoupMethod4Bits struct {
@@ -358,6 +393,10 @@ func (m *shoupMethod4Bits) MulImpl2(y *[16]byte) {
 	copy(y[:], z[:])
 }
 
+func (m *shoupMethod4Bits) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
+}
+
 // gcmFieldElement represents a value in GF(2¹²⁸). In order to reflect the GCM
 // standard and make binary.BigEndian suitable for marshaling these values, the
 // bits are stored in big endian order. For example:
@@ -407,6 +446,10 @@ func (m *gcmRawMethod) Mul(y *[16]byte) {
 	}
 	binary.BigEndian.PutUint64(y[:8], z.low)
 	binary.BigEndian.PutUint64(y[8:], z.high)
+}
+
+func (m *gcmRawMethod) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
 }
 
 // It's similar to the Shoup method.
@@ -503,6 +546,10 @@ func (m *gcmMethod) Mul(y *[16]byte) {
 
 	binary.BigEndian.PutUint64(y[:8], z.low)
 	binary.BigEndian.PutUint64(y[8:], z.high)
+}
+
+func (m *gcmMethod) Hash(T *[16]byte, data []byte) {
+	ghash(m, T, data)
 }
 
 // gcmReductionTable is stored irreducible polynomial's double & add precomputed results.
