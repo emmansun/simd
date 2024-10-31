@@ -56,7 +56,7 @@ func NewClmulAMD64Ghash(h []byte) *clmulAMD64Ghash {
 		sse.PCLMULQDQ(&T1, &B0, 0x11)
 		sse.PCLMULQDQ(&T2, &B1, 0x00)
 
-		g.processCmulResult(&T0, &T2, &T1, &B4)
+		g.processClmulResult(&T0, &T2, &T1, &B4)
 		g.reduceRound(&T0, &B4, &POLY)
 		g.reduceRound(&T0, &B4, &POLY)
 		sse.PXOR(&T0, &T1)
@@ -131,7 +131,7 @@ func (g *clmulAMD64Ghash) Hash(T *[16]byte, data []byte) {
 		g.mulRoundAAD(&X6, &T1, &T2, &ACC0, &ACC1, &ACCM, 6)
 		g.mulRoundAAD(&X7, &T1, &T2, &ACC0, &ACC1, &ACCM, 7)
 
-		g.processCmulResult(&ACC0, &ACCM, &ACC1, &T0)
+		g.processClmulResult(&ACC0, &ACCM, &ACC1, &T0)
 		// postponed reduction
 		g.reduceRound(&ACC0, &T0, &POLY)
 		g.reduceRound(&ACC0, &T0, &POLY)
@@ -180,7 +180,7 @@ func (g *clmulAMD64Ghash) mulOneBlock(X0, ACC0, ACCM, ACC1, T0, TH, THM, POLY *s
 	sse.PCLMULQDQ(ACC1, X0, 0x11)
 	sse.PCLMULQDQ(ACCM, T0, 0x00)
 
-	g.processCmulResult(ACC0, ACCM, ACC1, T0)
+	g.processClmulResult(ACC0, ACCM, ACC1, T0)
 	g.reduceRound(ACC0, T0, POLY)
 	g.reduceRound(ACC0, T0, POLY)
 	sse.PXOR(ACC0, ACC1) // ACC0 holds the result
@@ -188,7 +188,7 @@ func (g *clmulAMD64Ghash) mulOneBlock(X0, ACC0, ACCM, ACC1, T0, TH, THM, POLY *s
 
 // handle Karatsuba results in ACC0, ACCM, ACC1 to get the final result in ACC0, ACC1
 // T is a temporary register
-func (g *clmulAMD64Ghash) processCmulResult(ACC0, ACCM, ACC1, T *sse.XMM) {
+func (g *clmulAMD64Ghash) processClmulResult(ACC0, ACCM, ACC1, T *sse.XMM) {
 	sse.PXOR(ACCM, ACC0)
 	sse.PXOR(ACCM, ACC1)
 	sse.MOVOU(T, ACCM)
@@ -272,7 +272,7 @@ func NewClmulARM64Ghash(h []byte) *clmulARM64Ghash {
 		arm64.VPMULL(B0, B2, T1)  // T1 = ACC1 = B0.D[0] * B2.D[0]
 		arm64.VPMULL2(B0, B2, T0) // T0 = ACC0 = B0.D[1] * B2.D[1]
 		arm64.VPMULL(B1, B3, T2)  // T2 = ACCM = B1.D[0] * B3.D[0]
-		g.processCmulResult(T0, T2, T1, ZERO, T3)
+		g.processClmulResult(T0, T2, T1, ZERO, T3)
 		g.reduceRound(T0, T2, POLY)
 		g.reduceRound(T0, T2, POLY)
 		arm64.VEOR(T0, T1, B2)
@@ -342,7 +342,7 @@ func (g *clmulARM64Ghash) Hash(T *[16]byte, data []byte) {
 		g.mulRoundAAD(B6, T0, T1, T2, T3, ACC0, ACC1, ACCM, 6)
 		g.mulRoundAAD(B7, T0, T1, T2, T3, ACC0, ACC1, ACCM, 7)
 
-		g.processCmulResult(ACC0, ACCM, ACC1, ZERO, T0)
+		g.processClmulResult(ACC0, ACCM, ACC1, ZERO, T0)
 		g.reduceRound(ACC0, T0, POLY)
 		g.reduceRound(ACC0, T0, POLY)
 		arm64.VEOR(ACC0, ACC1, ACC0)    // ACC0 holds the result
@@ -383,7 +383,7 @@ func (g *clmulARM64Ghash) mulOneBlock(B0, ACC0, ACCM, ACC1, T0, T1, T2, POLY, ZE
 	arm64.VPMULL2(B0, T1, ACC0)
 	arm64.VPMULL(T0, T2, ACCM)
 
-	g.processCmulResult(ACC0, ACCM, ACC1, ZERO, T0)
+	g.processClmulResult(ACC0, ACCM, ACC1, ZERO, T0)
 	g.reduceRound(ACC0, T0, POLY)
 	g.reduceRound(ACC0, T0, POLY)
 	arm64.VEOR(ACC0, ACC1, ACC0)    // ACC0 holds the result
@@ -412,7 +412,7 @@ func (g *clmulARM64Ghash) mulRoundAAD(X, T0, T1, T2, T3, ACC0, ACC1, ACCM *arm64
 	arm64.VEOR(ACCM, T3, ACCM) // ACCM = ACCM ^ T3
 }
 
-func (g *clmulARM64Ghash) processCmulResult(ACC0, ACCM, ACC1, ZERO, T *arm64.Vector128) {
+func (g *clmulARM64Ghash) processClmulResult(ACC0, ACCM, ACC1, ZERO, T *arm64.Vector128) {
 	arm64.VEOR(ACC0, ACCM, ACCM)
 	arm64.VEOR(ACC1, ACCM, ACCM)
 	arm64.VEXT(8, ZERO, ACCM, T)
@@ -500,7 +500,7 @@ func NewClmulPPC64Ghash(h []byte, isPPC64LE bool) *clmulPPC64Ghash {
 		ppc64.VPMSUMD(IN, H, XM)  // H.hi·H.lo+H.lo·H.hi
 		ppc64.VPMSUMD(IN, HH, XH) // H.hi·H.hi
 
-		g.processCmulResult(XL, XM, XH, ZERO, T0)
+		g.processClmulResult(XL, XM, XH, ZERO, T0)
 		g.reduceRound(XL, T2, XC2)
 		g.reduceRound(XL, T2, XC2)
 
@@ -577,7 +577,7 @@ func (g *clmulPPC64Ghash) Hash(T *[16]byte, data []byte) {
 		g.mulRoundAAD(B6, ACC0, ACC1, ACCM, HL, H, HH, T0, 6)
 		g.mulRoundAAD(B7, ACC0, ACC1, ACCM, HL, H, HH, T0, 7)
 
-		g.processCmulResult(ACC0, ACCM, ACC1, ZERO, T0)
+		g.processClmulResult(ACC0, ACCM, ACC1, ZERO, T0)
 		g.reduceRound(ACC0, T0, XC2)
 		g.reduceRound(ACC0, T0, XC2)
 		ppc64.VXOR(ACC0, ACC1, ACC0) // ACC0 holds the result
@@ -644,7 +644,7 @@ func (g *clmulPPC64Ghash) mulOneBlock(B0, ACC0, ACCM, ACC1, HL, H, HH, T0, XC2, 
 	ppc64.VPMSUMD(B0, HL, ACC0)
 	ppc64.VPMSUMD(B0, H, ACCM)
 	ppc64.VPMSUMD(B0, HH, ACC1)
-	g.processCmulResult(ACC0, ACCM, ACC1, ZERO, T0)
+	g.processClmulResult(ACC0, ACCM, ACC1, ZERO, T0)
 	g.reduceRound(ACC0, T0, XC2)
 	g.reduceRound(ACC0, T0, XC2)
 	ppc64.VXOR(ACC0, ACC1, ACC0) // ACC0 holds the result
@@ -692,7 +692,7 @@ func (g *clmulPPC64Ghash) initPoly(POLY, ZERO, T0, T1 *ppc64.Vector128) {
 	ppc64.VOR(POLY, T1, POLY)          // 0xc2....01
 }
 
-func (g *clmulPPC64Ghash) processCmulResult(ACC0, ACCM, ACC1, ZERO, T *ppc64.Vector128) {
+func (g *clmulPPC64Ghash) processClmulResult(ACC0, ACCM, ACC1, ZERO, T *ppc64.Vector128) {
 	ppc64.VSLDOI(8, ACCM, ZERO, T) // T = ACCM.hi || zero
 	ppc64.VXOR(ACC0, T, ACC0)      // ACC0 = ACC0 ^ (ACCM.hi || zero) = ACCM.hi || ACC0.lo
 	ppc64.VSLDOI(8, ZERO, ACCM, T) // T = zero || ACCM.lo
