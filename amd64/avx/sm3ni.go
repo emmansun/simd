@@ -197,7 +197,7 @@ func sm3block(state *[8]uint32, p []byte) {
 		SM3MSG(X2, X3, X4, X5, X6, X7, X8) // X2 = W23 W22 W21 W20
 		SM3RNDS4(X0, X1, X3, X4, X7, 4)
 
-		SM3MSG(X3, X4, X5, X6, X2, X7, X8) // X3 = W27 W26 W25
+		SM3MSG(X3, X4, X5, X6, X2, X7, X8) // X3 = W27 W26 W25 W24
 		SM3RNDS4(X0, X1, X4, X5, X7, 8)
 
 		SM3MSG(X4, X5, X6, X2, X3, X7, X8) // X4 = W31 W30 W29 W28
