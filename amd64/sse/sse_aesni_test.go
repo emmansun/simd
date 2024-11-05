@@ -2,6 +2,8 @@ package sse
 
 import (
 	"testing"
+
+	"github.com/emmansun/simd/alg/sm4"
 )
 
 func testSboxWithAESNI(t *testing.T, idx int, m1l, m1h, m2l, m2h *XMM, sbox *[256]byte) {
@@ -85,7 +87,7 @@ func TestSM4SBOXWithAESNI(t *testing.T) {
 		m2h := &XMM{}
 		GenLookupTable(c.m1, c.c1, m1l, m1h)
 		GenLookupTable(c.m2, c.c2, m2l, m2h)
-		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &sm4_sbox)
+		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &sm4.SBOX)
 	}
 }
 

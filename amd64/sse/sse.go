@@ -21,6 +21,10 @@ func (m *XMM) Uint32s() []uint32 {
 	return []uint32{binary.LittleEndian.Uint32(m.bytes[:]), binary.LittleEndian.Uint32(m.bytes[4:]), binary.LittleEndian.Uint32(m.bytes[8:]), binary.LittleEndian.Uint32(m.bytes[12:])}
 }
 
+func (m *XMM) Uint16s() []uint16 {
+	return []uint16{binary.LittleEndian.Uint16(m.bytes[:]), binary.LittleEndian.Uint16(m.bytes[2:]), binary.LittleEndian.Uint16(m.bytes[4:]), binary.LittleEndian.Uint16(m.bytes[6:]), binary.LittleEndian.Uint16(m.bytes[8:]), binary.LittleEndian.Uint16(m.bytes[10:]), binary.LittleEndian.Uint16(m.bytes[12:]), binary.LittleEndian.Uint16(m.bytes[14:])}
+}
+
 func MOVOU_U64(dst *XMM, hi, lo uint64) {
 	binary.LittleEndian.PutUint64(dst.bytes[:], lo)
 	binary.LittleEndian.PutUint64(dst.bytes[8:], hi)

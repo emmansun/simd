@@ -3,22 +3,9 @@ package arm64
 import (
 	"encoding/binary"
 	"math/bits"
+
+	"github.com/emmansun/simd/alg/sm3"
 )
-
-const (
-	_T0 = 0x79cc4519
-	_T1 = 0x7a879d8a
-)
-
-var IV = [8]uint32{0x7380166f, 0x4914b2b9, 0x172442d7, 0xda8a0600, 0xa96f30bc, 0x163138aa, 0xe38dee4d, 0xb0fb0e4e}
-
-func p0(x uint32) uint32 {
-	return x ^ bits.RotateLeft32(x, 9) ^ bits.RotateLeft32(x, 17)
-}
-
-func p1(x uint32) uint32 {
-	return x ^ (x<<15 | x>>17) ^ (x<<23 | x>>9)
-}
 
 // https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/SM3PARTW1--SM3PARTW1-?lang=en
 func SM3PARTW1(Vm, Vn, Vd *Vector128) {
@@ -38,7 +25,7 @@ func SM3PARTW1(Vm, Vn, Vd *Vector128) {
 			binary.LittleEndian.PutUint32(result.bytes[i:], v)
 		}
 		v := binary.LittleEndian.Uint32(result.bytes[i:])
-		v = p1(v)
+		v = sm3.P1(v)
 		binary.LittleEndian.PutUint32(result.bytes[i:], v)
 	}
 	copy(Vd.bytes[:], result.bytes[:])
@@ -58,7 +45,7 @@ func SM3PARTW2(Vm, Vn, Vd *Vector128) {
 	VEOR(Vd, tmp, result)
 
 	tmp2 := bits.RotateLeft32(binary.LittleEndian.Uint32(tmp.bytes[:]), 15)
-	tmp2 = p1(tmp2)
+	tmp2 = sm3.P1(tmp2)
 	tmp3 := binary.LittleEndian.Uint32(result.bytes[12:])
 	binary.LittleEndian.PutUint32(result.bytes[12:], tmp2^tmp3)
 	copy(Vd.bytes[:], result.bytes[:])
@@ -105,10 +92,6 @@ func SM3TT1A(imm byte, Vm, Vn, Vd *Vector128) {
 	copy(Vd.bytes[:], result.bytes[:])
 }
 
-func ff(x, y, z uint32) uint32 {
-	return (x & y) | (x & z) | (y & z)
-}
-
 // https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/SM3TT1B--SM3TT1B-?lang=en
 // Vm: Wj'
 // Vn: SS1
@@ -125,7 +108,7 @@ func SM3TT1B(imm byte, Vm, Vn, Vd *Vector128) {
 	d1 := binary.LittleEndian.Uint32(Vd.bytes[4:])
 	d2 := binary.LittleEndian.Uint32(Vd.bytes[8:])
 	d3 := binary.LittleEndian.Uint32(Vd.bytes[12:])
-	TT1 := ff(d3, d2, d1)
+	TT1 := sm3.FF16(d3, d2, d1)
 	TT1 += SS2 + WjPrime + binary.LittleEndian.Uint32(Vd.bytes[:])
 
 	binary.LittleEndian.PutUint32(result.bytes[:], binary.LittleEndian.Uint32(Vd.bytes[4:]))
@@ -150,12 +133,8 @@ func SM3TT2A(imm byte, Vm, Vn, Vd *Vector128) {
 	binary.LittleEndian.PutUint32(result.bytes[:], binary.LittleEndian.Uint32(Vd.bytes[4:]))
 	binary.LittleEndian.PutUint32(result.bytes[4:], bits.RotateLeft32(binary.LittleEndian.Uint32(Vd.bytes[8:]), 19))
 	binary.LittleEndian.PutUint32(result.bytes[8:], binary.LittleEndian.Uint32(Vd.bytes[12:]))
-	binary.LittleEndian.PutUint32(result.bytes[12:], p0(TT2))
+	binary.LittleEndian.PutUint32(result.bytes[12:], sm3.P0(TT2))
 	copy(Vd.bytes[:], result.bytes[:])
-}
-
-func gg(x, y, z uint32) uint32 {
-	return (x & y) | (^x & z)
 }
 
 // https://developer.arm.com/documentation/ddi0602/2024-09/SIMD-FP-Instructions/SM3TT2B--SM3TT2B-?lang=en
@@ -170,13 +149,13 @@ func SM3TT2B(imm byte, Vm, Vn, Vd *Vector128) {
 	d1 := binary.LittleEndian.Uint32(Vd.bytes[4:])
 	d2 := binary.LittleEndian.Uint32(Vd.bytes[8:])
 	d3 := binary.LittleEndian.Uint32(Vd.bytes[12:])
-	TT2 := gg(d3, d2, d1)
+	TT2 := sm3.GG16(d3, d2, d1)
 	TT2 += Wj + binary.LittleEndian.Uint32(Vd.bytes[:]) + binary.LittleEndian.Uint32(Vn.bytes[12:])
 
 	binary.LittleEndian.PutUint32(result.bytes[:], binary.LittleEndian.Uint32(Vd.bytes[4:]))
 	binary.LittleEndian.PutUint32(result.bytes[4:], bits.RotateLeft32(binary.LittleEndian.Uint32(Vd.bytes[8:]), 19))
 	binary.LittleEndian.PutUint32(result.bytes[8:], binary.LittleEndian.Uint32(Vd.bytes[12:]))
-	binary.LittleEndian.PutUint32(result.bytes[12:], p0(TT2))
+	binary.LittleEndian.PutUint32(result.bytes[12:], sm3.P0(TT2))
 	copy(Vd.bytes[:], result.bytes[:])
 }
 
@@ -221,7 +200,7 @@ func sm3block(state *[8]uint32, p []byte) {
 
 		// first 16 rounds
 		// load T constants
-		VLD1_4S([]uint32{0, 0, 0, _T0}, V11)
+		VLD1_4S([]uint32{0, 0, 0, sm3.CONST0}, V11)
 		qroundA(V11, V12, V8, V9, V0, V1, V2, V3, V4)
 		qroundA(V11, V12, V8, V9, V1, V2, V3, V4, V0)
 		qroundA(V11, V12, V8, V9, V2, V3, V4, V0, V1)
@@ -313,8 +292,7 @@ func qroundB(t0, t1, st1, st2, s0, s1, s2, s3, s4 *Vector128) {
 	VEXT(2*4, s3, s2, V7) // w10,w11,w12,w13
 	SM3PARTW1(s3, s0, s4)
 	SM3PARTW2(V6, V7, s4) // s4 include W16, W17, W18, W19
-
-	VEOR(s0, s1, V10) //v10 is W'
+	VEOR(s0, s1, V10)     //v10 is W'
 
 	// compression
 	roundB(0, t0, t1, st1, st2, s0, V10)

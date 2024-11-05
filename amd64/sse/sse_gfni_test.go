@@ -1,6 +1,10 @@
 package sse
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/emmansun/simd/alg/sm4"
+)
 
 func TestAESSBOXWithGFNI(t *testing.T) {
 	m2 := Set64(0xf1e3c78f1f3e7cf8, 0xf1e3c78f1f3e7cf8)
@@ -97,7 +101,7 @@ func TestSM4SBOXWithGFNI(t *testing.T) {
 	for i, c := range cases {
 		m1 := Set64(c.m1, c.m1)
 		m2 := Set64(c.m2, c.m2)
-		testSBOXWithGFNI(t, i+1, &m1, &m2, c.c1, 0xd3, &sm4_sbox)
+		testSBOXWithGFNI(t, i+1, &m1, &m2, c.c1, 0xd3, &sm4.SBOX)
 	}
 }
 
