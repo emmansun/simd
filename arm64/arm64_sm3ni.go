@@ -235,6 +235,8 @@ func sm3block(state *[8]uint32, p []byte) {
 	VST1_4S(V9, state[4:])
 }
 
+// Four rounds A, both message schedule and compression.
+// With SM3TT1A, SM3TT2A
 // Compress 4 words and generate 4 words, used v6, v7, v10 as temp registers
 // s4, used to store next 4 words
 // s0, W(4i) W(4i+1) W(4i+2) W(4i+3)
@@ -279,6 +281,8 @@ func roundA(i byte, t0, t1, st1, st2, w, wt *Vector128) {
 	SM3TT2A(i, w, V5, st2)  // TT2
 }
 
+// Four rounds B, both message schedule and compression.
+// With SM3TT1B, SM3TT2B
 func qroundB(t0, t1, st1, st2, s0, s1, s2, s3, s4 *Vector128) {
 	var (
 		V6  = &Vector128{}
@@ -301,6 +305,7 @@ func qroundB(t0, t1, st1, st2, s0, s1, s2, s3, s4 *Vector128) {
 	roundB(3, t1, t0, st1, st2, s0, V10)
 }
 
+// Four rounds C, just compression, no message schedule.
 func qroundC(t0, t1, st1, st2, s0, s1 *Vector128) {
 	var (
 		V10 = &Vector128{}
