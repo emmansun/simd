@@ -53,3 +53,44 @@ func VSM4RNDS4(dst, src1, src2 *sse.XMM) {
 	}
 	VMOVDQU(dst, roundresult)
 }
+
+func ExpandKey(out []uint32, key []byte) {
+	_ = out[31]
+	var (
+		ck        = &sse.XMM{}
+		fk        = &sse.XMM{}
+		flip_mask = &sse.XMM{}
+		keyXMM    = &sse.XMM{}
+	)
+	VMOVDQU_L16B(flip_mask, []byte{0x03, 0x02, 0x01, 0x00, 0x07, 0x06, 0x05, 0x04, 0x0b, 0x0a, 0x09, 0x08, 0x0f, 0x0e, 0x0d, 0x0c})
+	VMOVDQU_L4S(fk, sm4.FK[:])
+
+	VMOVDQU_L16B(keyXMM, key)
+	VPSHUFB(keyXMM, keyXMM, flip_mask)
+	VPXOR(keyXMM, keyXMM, fk)
+
+	for i := 0; i < 32; i += 4 {
+		VMOVDQU_L4S(ck, sm4.CK[i:])
+		VSM4KEY4(keyXMM, keyXMM, ck)
+		VMOVDQU_S4S(out[i:], keyXMM)
+	}
+}
+
+func Encrypt(dst []byte, src []byte, key *[32]uint32) {
+	_ = dst[15]
+	_ = src[15]
+	data := &sse.XMM{}
+	rk := &sse.XMM{}
+	flip_mask := &sse.XMM{}
+	bswap_mask := &sse.XMM{}
+	VMOVDQU_L16B(flip_mask, []byte{0x03, 0x02, 0x01, 0x00, 0x07, 0x06, 0x05, 0x04, 0x0b, 0x0a, 0x09, 0x08, 0x0f, 0x0e, 0x0d, 0x0c})
+	VMOVDQU_L16B(bswap_mask, []byte{0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00})
+	VMOVDQU_L16B(data, src)
+	VPSHUFB(data, data, flip_mask)
+	for i := 0; i < 32; i += 4 {
+		VMOVDQU_L4S(rk, key[i:])
+		VSM4RNDS4(data, data, rk)
+	}
+	VPSHUFB(data, data, bswap_mask)
+	VMOVEDQU_S16B(dst, data)
+}

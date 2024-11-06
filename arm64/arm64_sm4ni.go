@@ -49,3 +49,38 @@ func SM4EKEY(Vm, Vn, Vd *Vector128) {
 	}
 	copy(Vd.bytes[:], roundresult.bytes[:])
 }
+
+func ExpandKey(out []uint32, key []byte) {
+	_ = out[31]
+	var (
+		ck        = &Vector128{}
+		fk        = &Vector128{}
+		keyVector = &Vector128{}
+	)
+	VLD1_16B(key, keyVector)
+	VREV32_B(keyVector, keyVector)
+	VLD1_4S(sm4.FK[:], fk)
+	VEOR(fk, keyVector, keyVector)
+	
+	for i := 0; i < 32; i += 4 {
+		VLD1_4S(sm4.CK[i:], ck)
+		SM4EKEY(ck, keyVector, keyVector)
+		VST1_4S(keyVector, out[i:])
+	}
+}
+
+func Encrypt(out, in []byte, enc *[32]uint32) {
+	_ = out[15]
+	_ = in[15]
+	data := &Vector128{}
+	rk := &Vector128{}
+	VLD1_16B(in, data)
+	VREV32_B(data, data)
+	for i := 0; i < 32; i += 4 {
+		VLD1_4S(enc[i:], rk)
+		SM4E(rk, data)
+	}
+	VREV64_B(data, data)
+	VEXT(8, data, data, data)
+	VST1_16B(data, out)
+}
