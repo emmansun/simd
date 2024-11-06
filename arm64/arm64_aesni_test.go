@@ -1,6 +1,11 @@
 package arm64
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/emmansun/simd/alg/sm4"
+	"github.com/emmansun/simd/alg/zuc"
+)
 
 func testSboxWithAESNI(t *testing.T, idx int, m1l, m1h, m2l, m2h *Vector128, sbox *[256]byte) {
 	t.Helper()
@@ -74,7 +79,7 @@ func TestSM4SBOXWithAESNI(t *testing.T) {
 			0xe2acf9f7ddaf54fe,
 			0x01,
 			0x34,
-		},				
+		},
 	}
 	for i, c := range cases {
 		m1l := &Vector128{}
@@ -83,7 +88,7 @@ func TestSM4SBOXWithAESNI(t *testing.T) {
 		m2h := &Vector128{}
 		GenLookupTable(c.m1, c.c1, m1l, m1h)
 		GenLookupTable(c.m2, c.c2, m2l, m2h)
-		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &sm4_sbox)
+		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &sm4.SBOX)
 	}
 }
 
@@ -139,7 +144,7 @@ func TestZUCSBOXWithAESNI(t *testing.T) {
 			0x1584e79df5664595,
 			0x00,
 			0xec,
-		},		
+		},
 	}
 	for i, c := range cases {
 		m1l := &Vector128{}
@@ -148,6 +153,6 @@ func TestZUCSBOXWithAESNI(t *testing.T) {
 		m2h := &Vector128{}
 		GenLookupTable(c.m1, c.c1, m1l, m1h)
 		GenLookupTable(c.m2, c.c2, m2l, m2h)
-		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &zuc_sbox)
+		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &zuc.SBOX)
 	}
 }

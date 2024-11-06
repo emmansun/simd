@@ -1,4 +1,4 @@
-package sse
+package ppc64
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 	"github.com/emmansun/simd/alg/zuc"
 )
 
-func testSboxWithAESNI(t *testing.T, idx int, m1l, m1h, m2l, m2h *XMM, sbox *[256]byte) {
+func testSboxWithAESNI(t *testing.T, idx int, m1l, m1h, m2l, m2h *Vector128, sbox *[256]byte) {
 	t.Helper()
-	dst := &XMM{}
+	dst := &Vector128{}
 	for k := 0; k < 256; k += 16 {
-		SetBytes(dst, []byte{byte(k), byte(k + 1), byte(k + 2), byte(k + 3), byte(k + 4), byte(k + 5), byte(k + 6), byte(k + 7), byte(k + 8), byte(k + 9), byte(k + 10), byte(k + 11), byte(k + 12), byte(k + 13), byte(k + 14), byte(k + 15)})
-		SboxWithAESNI(dst, m1l, m1h, m2l, m2h)
+		LXVD2X([]byte{byte(k), byte(k + 1), byte(k + 2), byte(k + 3), byte(k + 4), byte(k + 5), byte(k + 6), byte(k + 7), byte(k + 8), byte(k + 9), byte(k + 10), byte(k + 11), byte(k + 12), byte(k + 13), byte(k + 14), byte(k + 15)}, dst)
+		SboxWithAESNI(m1l, m1h, m2l, m2h, dst)
 		for i := 0; i < 16; i++ {
 			if dst.bytes[i] != sbox[k+i] {
 				t.Fatalf("Case %v SBOX(%v) = %x; want %x", idx, k+i, dst.Bytes()[i], sbox[k+i])
@@ -82,10 +82,10 @@ func TestSM4SBOXWithAESNI(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		m1l := &XMM{}
-		m1h := &XMM{}
-		m2l := &XMM{}
-		m2h := &XMM{}
+		m1l := &Vector128{}
+		m1h := &Vector128{}
+		m2l := &Vector128{}
+		m2h := &Vector128{}
 		GenLookupTable(c.m1, c.c1, m1l, m1h)
 		GenLookupTable(c.m2, c.c2, m2l, m2h)
 		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &sm4.SBOX)
@@ -147,10 +147,10 @@ func TestZUCSBOXWithAESNI(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		m1l := &XMM{}
-		m1h := &XMM{}
-		m2l := &XMM{}
-		m2h := &XMM{}
+		m1l := &Vector128{}
+		m1h := &Vector128{}
+		m2l := &Vector128{}
+		m2h := &Vector128{}
 		GenLookupTable(c.m1, c.c1, m1l, m1h)
 		GenLookupTable(c.m2, c.c2, m2l, m2h)
 		testSboxWithAESNI(t, i+1, m1l, m1h, m2l, m2h, &zuc.SBOX)

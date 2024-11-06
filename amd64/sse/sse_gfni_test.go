@@ -3,7 +3,9 @@ package sse
 import (
 	"testing"
 
+	"github.com/emmansun/simd/alg/aes"
 	"github.com/emmansun/simd/alg/sm4"
+	"github.com/emmansun/simd/alg/zuc"
 )
 
 func TestAESSBOXWithGFNI(t *testing.T) {
@@ -14,8 +16,8 @@ func TestAESSBOXWithGFNI(t *testing.T) {
 		// AES SBOX
 		GF2P8AFFINEINVQB(dst, &m2, 0x63)
 		for i := 0; i < 16; i++ {
-			if dst.bytes[i] != aes_sbox[k+i] {
-				t.Fatalf("AES SBOX(%v) = %x; want %x", k+i, dst.Bytes()[i], aes_sbox[k+i])
+			if dst.bytes[i] != aes.SBOX[k+i] {
+				t.Fatalf("AES SBOX(%v) = %x; want %x", k+i, dst.Bytes()[i], aes.SBOX[k+i])
 			}
 		}
 	}
@@ -30,8 +32,8 @@ func TestAESSBOXWithGFNI2(t *testing.T) {
 		// AES SBOX
 		SBOX(dst, &m1, &m2, 0, 0x63)
 		for i := 0; i < 16; i++ {
-			if dst.bytes[i] != aes_sbox[k+i] {
-				t.Fatalf("AES SBOX(%v) = %x; want %x", k+i, dst.Bytes()[i], aes_sbox[k+i])
+			if dst.bytes[i] != aes.SBOX[k+i] {
+				t.Fatalf("AES SBOX(%v) = %x; want %x", k+i, dst.Bytes()[i], aes.SBOX[k+i])
 			}
 		}
 	}
@@ -145,6 +147,6 @@ func TestZUCSBOXWithGFNI(t *testing.T) {
 	for i, c := range cases {
 		m1 := Set64(c.m1, c.m1)
 		m2 := Set64(c.m2, c.m2)
-		testSBOXWithGFNI(t, i+1, &m1, &m2, 0, 0x55, &zuc_sbox)
+		testSBOXWithGFNI(t, i+1, &m1, &m2, 0, 0x55, &zuc.SBOX)
 	}
 }

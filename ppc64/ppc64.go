@@ -148,6 +148,13 @@ func VSRW(src, indicator, dst *Vector128) {
 	}
 }
 
+func VSRD(src, indicator, dst *Vector128) {
+	for i := 0; i < 16; i += 8 {
+		ind := indicator.bytes[i+7] & 0x3f
+		binary.BigEndian.PutUint64(dst.bytes[i:], binary.BigEndian.Uint64(src.bytes[i:])>>ind)
+	}
+}
+
 func VSLB(src, indicator, dst *Vector128) {
 	for i := 0; i < 16; i++ {
 		ind := indicator.bytes[i] & 0x7
@@ -178,7 +185,7 @@ func VSL(src, indicator, dst *Vector128) {
 			panic("VSL: shift amount must be the same for all bytes")
 		}
 		if i < 15 {
-			tmp.bytes[i] = src.bytes[i] << sh | src.bytes[i+1] >> (8 - sh)
+			tmp.bytes[i] = src.bytes[i]<<sh | src.bytes[i+1]>>(8-sh)
 		} else {
 			tmp.bytes[i] = src.bytes[i] << sh
 		}
@@ -195,7 +202,7 @@ func VSR(src, indicator, dst *Vector128) {
 			panic("VSR: shift amount must be the same for all bytes")
 		}
 		if i > 0 {
-			tmp.bytes[i] = src.bytes[i] >> sh | src.bytes[i-1] << (8 - sh)
+			tmp.bytes[i] = src.bytes[i]>>sh | src.bytes[i-1]<<(8-sh)
 		} else {
 			tmp.bytes[i] = src.bytes[i] >> sh
 		}
