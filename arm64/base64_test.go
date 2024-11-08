@@ -13,10 +13,10 @@ var dencodeStdLut = [128]byte{
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62, 255, 255, 255, 63,
 	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255, 255, 255, 255, 255, 255,
-	0, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+	255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
 	14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 255, 255, 255, 255,
 	255, 255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-	40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255,
+	40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255, 255,
 }
 
 var dencodeUrlLut = [128]byte{
@@ -24,10 +24,10 @@ var dencodeUrlLut = [128]byte{
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
 	255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62, 255, 255,
 	52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255, 255, 255, 255, 255, 255,
-	0, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+	255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
 	14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 255, 255, 255, 255,
 	63, 255, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-	40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255,
+	40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 255, 255, 255, 255, 255,
 }
 
 func encode(dst, src []byte, lut []byte) {
@@ -103,8 +103,8 @@ func encode16Bytes(dst, src []byte, lut []byte) {
 	VLD1_2D([]uint64{0x0405030401020001, 0x0a0b090a07080607}, V3) // reshuffle_mask
 	VLD1_2D([]uint64{0x0FC0FC000FC0FC00, 0x0FC0FC000FC0FC00}, V4) // mulhi_mask
 	//VLD1_2D([]uint64{0x0400004004000040, 0x0400004004000040}, V5) // mulhi_const
-	VLD1_2D([]uint64{0x003F03F0003F03F0, 0x003F03F0003F03F0}, V6) // mullo_mask
-	VLD1_2D([]uint64{0x0100001001000010, 0x0100001001000010}, V7) // mullo_const
+	VLD1_2D([]uint64{0x003F03F0003F03F0, 0x003F03F0003F03F0}, V6)  // mullo_mask
+	VLD1_2D([]uint64{0x0100001001000010, 0x0100001001000010}, V7)  // mullo_const
 	VLD1_2D([]uint64{0x1f1e1b1a17161312, 0x0f0e0b0a07060302}, V12) // high part of word
 	VSHL_S(2, V7, V5)
 
@@ -218,16 +218,10 @@ func decode(dst, src []byte, lut *[128]byte) {
 	VLD1_16B(lut[96:], V14)
 	VLD1_16B(lut[112:], V15)
 
-	VDUP_BYTE(0x3f, V7)
+	VDUP_BYTE(0x40, V7)
 
 	// load input
 	VLD4_16B(src, V0, V1, V2, V3)
-
-	// Get indices for second LUT:
-	VUQSUB_B(V7, V0, V16)
-	VUQSUB_B(V7, V1, V17)
-	VUQSUB_B(V7, V2, V18)
-	VUQSUB_B(V7, V3, V19)
 
 	// Get values from first LUT:
 	VTBL_B(V0, []*Vector128{V8, V9, V10, V11}, V20)
@@ -236,22 +230,20 @@ func decode(dst, src []byte, lut *[128]byte) {
 	VTBL_B(V3, []*Vector128{V8, V9, V10, V11}, V23)
 
 	// Get values from second LUT:
-	VTBX_B(V16, []*Vector128{V12, V13, V14, V15}, V16)
-	VTBX_B(V17, []*Vector128{V12, V13, V14, V15}, V17)
-	VTBX_B(V18, []*Vector128{V12, V13, V14, V15}, V18)
-	VTBX_B(V19, []*Vector128{V12, V13, V14, V15}, V19)
-
-	// Get final values:
-	VORR(V20, V16, V0)
-	VORR(V21, V17, V1)
-	VORR(V22, V18, V2)
-	VORR(V23, V19, V3)
+	VSUB_B(V7, V0, V0)
+	VTBX_B(V0, []*Vector128{V12, V13, V14, V15}, V20)
+	VSUB_B(V7, V1, V1)
+	VTBX_B(V1, []*Vector128{V12, V13, V14, V15}, V21)
+	VSUB_B(V7, V2, V2)
+	VTBX_B(V2, []*Vector128{V12, V13, V14, V15}, V22)
+	VSUB_B(V7, V3, V3)
+	VTBX_B(V3, []*Vector128{V12, V13, V14, V15}, V23)
 
 	// Check for invalid input, any value larger than 63:
-	VCMHI_B(false, V7, V0, V16)
-	VCMHI_B(false, V7, V1, V17)
-	VCMHI_B(false, V7, V2, V18)
-	VCMHI_B(false, V7, V3, V19)
+	VCMHS_B(V7, V20, V16)
+	VCMHS_B(V7, V21, V17)
+	VCMHS_B(V7, V22, V18)
+	VCMHS_B(V7, V23, V19)
 
 	VORR(V16, V17, V16)
 	VORR(V18, V19, V18)
@@ -264,16 +256,16 @@ func decode(dst, src []byte, lut *[128]byte) {
 	}
 
 	// Compress four bytes into three:
-	VSHL_B(2, V0, V4)
-	VUSHR_B(4, V1, V16)
+	VSHL_B(2, V20, V4)
+	VUSHR_B(4, V21, V16)
 	VORR(V4, V16, V4)
 
-	VSHL_B(4, V1, V5)
-	VUSHR_B(2, V2, V16)
+	VSHL_B(4, V21, V5)
+	VUSHR_B(2, V22, V16)
 	VORR(V5, V16, V5)
 
-	VSHL_B(6, V2, V16)
-	VORR(V16, V3, V6)
+	VSHL_B(6, V22, V16)
+	VORR(V16, V23, V6)
 
 	VST3_16B(V4, V5, V6, dst)
 }
@@ -356,25 +348,20 @@ func decode16B(dst, src []byte, lut *[128]byte) {
 	VLD1_16B(lut[96:], V14)
 	VLD1_16B(lut[112:], V15)
 
-	VDUP_BYTE(0x3f, V7)
+	VDUP_BYTE(0x40, V7)
 
 	// load input
 	VLD1_16B(src, V0)
-
-	// Get indices for second LUT:
-	VUQSUB_B(V7, V0, V16)
 
 	// Get values from first LUT:
 	VTBL_B(V0, []*Vector128{V8, V9, V10, V11}, V20)
 
 	// Get values from second LUT:
-	VTBX_B(V16, []*Vector128{V12, V13, V14, V15}, V16)
-
-	// Get final values:
-	VORR(V20, V16, V0)
+	VSUB_B(V7, V0, V0)
+	VTBX_B(V0, []*Vector128{V12, V13, V14, V15}, V20)
 
 	// Check for invalid input, any value larger than 63:
-	VCMHI_B(false, V7, V0, V16)
+	VCMHS_B(V7, V20, V16)
 
 	// Check that all bits are zero:
 	VUMAXV_B(true, V16, V17)
@@ -383,8 +370,8 @@ func decode16B(dst, src []byte, lut *[128]byte) {
 	}
 
 	// Compress four bytes into three:
-	UMULL_B(V0, V1, V4)
-	UMULL2_B(V0, V1, V0)
+	UMULL_B(V20, V1, V4)
+	UMULL2_B(V20, V1, V0)
 	VADDP_H(V0, V4, V0)
 	//VTBL_B(V18, []*Vector128{V4, V0}, V5)
 	//VTBL_B(V19, []*Vector128{V4, V0}, V6)
@@ -433,7 +420,7 @@ func TestVMUL(t *testing.T) {
 		},
 		{ // VMUL V0.H8, V7.H8, V0.H8
 			1, 0, 7, 0, 0x4e609ce0,
-		},		
+		},
 		{ // VMUL V6.S4, V7.S4, V8.S4
 			2, 6, 7, 8, 0x4ea69ce8,
 		},
@@ -469,19 +456,19 @@ func TestUMULL(t *testing.T) {
 		},
 		{ // UMULL2 V1.S4, V12.S4, V1.D2
 			1, 1, 1, 12, 1, 0x6e61c181,
-		},				
+		},
 		{ // UMULL2 V0.B16, V1.B16, V2.H8
 			1, 0, 0, 1, 2, 0x6e20c022,
 		},
 		{ // UMULL2 V0.B16, V1.B16, V0.H8
 			1, 0, 0, 1, 0, 0x6e20c020,
-		},		
+		},
 		{ // UMULL2 V0.H8, V1.H8, V0.S4
 			1, 1, 0, 1, 0, 0x6e60c020,
 		},
 		{ // UMULL2 V0.H8, V2.H8, V0.S4
 			1, 1, 0, 2, 0, 0x6e60c040,
-		},		
+		},
 		{ // UMULL2 V6.S4, V7.S4, V8.D2
 			1, 2, 6, 7, 8, 0x6ea6c0e8,
 		},
@@ -491,5 +478,88 @@ func TestUMULL(t *testing.T) {
 		if inst != c.inst {
 			t.Errorf("UMULL = %x; want %x", inst, c.inst)
 		}
+	}
+}
+
+func vtbx(Vd, Vn, len, Vm byte) uint32 {
+	inst := uint32(0x4e001000) | uint32(Vd&0x1f) | uint32(Vn&0x1f)<<5 | uint32(len&0x3)<<13 | uint32(Vm&0x1f)<<16
+	return inst
+}
+
+func cmhi(Vd, Vn, Vm byte) uint32 {
+	inst := uint32(0x6e203400) | uint32(Vd&0x1f) | uint32(Vn&0x1f)<<5 | uint32(Vm&0x1f)<<16
+	return inst
+}
+
+func cmhs(Vd, Vn, Vm byte) uint32 {
+	inst := uint32(0x6e203c00) | uint32(Vd&0x1f) | uint32(Vn&0x1f)<<5 | uint32(Vm&0x1f)<<16
+	return inst
+}
+
+func TestInstructions(t *testing.T) {
+	// VTBX V16.B16, [V12.B16, V13.B16, V14.B16, V15.B16], V16.B16
+	inst := vtbx(16, 12, 3, 16)
+	if inst != 0x4e107190 {
+		t.Fatalf("got %x, expected 0x4e107190", inst)
+	}
+	// VTBX V20.B16, [V12.B16, V13.B16, V14.B16, V15.B16], V0.B16
+	inst = vtbx(0, 12, 3, 20)
+	if inst != 0x4e147180 {
+		t.Fatalf("got %x, expected 0x4e147180", inst)
+	}
+	// VTBX V21.B16, [V12.B16, V13.B16, V14.B16, V15.B16], V1.B16
+	inst = vtbx(1, 12, 3, 21)
+	if inst != 0x4e157181 {
+		t.Fatalf("got %x, expected 0x4e157181", inst)
+	}
+	// VTBX V22.B16, [V12.B16, V13.B16, V14.B16, V15.B16], V2.B16
+	inst = vtbx(2, 12, 3, 22)
+	if inst != 0x4e167182 {
+		t.Fatalf("got %x, expected 0x4e167182", inst)
+	}
+	// VTBX V23.B16, [V12.B16, V13.B16, V14.B16, V15.B16], V3.B16
+	inst = vtbx(3, 12, 3, 23)
+	if inst != 0x4e177183 {
+		t.Fatalf("got %x, expected 0x4e177183", inst)
+	}
+	// VCMHI V7.B16, V0.B16, V16.B16
+	inst = cmhi(16, 0, 7)
+	if inst != 0x6e273410 {
+		t.Fatalf("got %x, expected 0x6e273410", inst)
+	}
+	// VCMHS V7.B16, V0.B16, V16.B16
+	inst = cmhs(16, 0, 7)
+	if inst != 0x6e273c10 {
+		t.Fatalf("got %x, expected 0x6e273c10", inst)
+	}
+	// VCMHI V7.B16, V1.B16, V17.B16
+	inst = cmhi(17, 1, 7)
+	if inst != 0x6e273431 {
+		t.Fatalf("got %x, expected 0x6e273431", inst)
+	}
+	// VCMHS V7.B16, V1.B16, V17.B16
+	inst = cmhs(17, 1, 7)
+	if inst != 0x6e273c31 {
+		t.Fatalf("got %x, expected 0x6e273c31", inst)
+	}
+	// VCMHI V7.B16, V2.B16, V18.B16
+	inst = cmhi(18, 2, 7)
+	if inst != 0x6e273452 {
+		t.Fatalf("got %x, expected 0x6e273452", inst)
+	}
+	// VCMHS V7.B16, V2.B16, V18.B16
+	inst = cmhs(18, 2, 7)
+	if inst != 0x6e273c52 {
+		t.Fatalf("got %x, expected 0x6e273c52", inst)
+	}
+	// VCMHI V7.B16, V3.B16, V19.B16
+	inst = cmhi(19, 3, 7)
+	if inst != 0x6e273473 {
+		t.Fatalf("got %x, expected 0x6e273473", inst)
+	}
+	// VCMHS V7.B16, V3.B16, V19.B16
+	inst = cmhs(19, 3, 7)
+	if inst != 0x6e273c73 {
+		t.Fatalf("got %x, expected 0x6e273c73", inst)
 	}
 }

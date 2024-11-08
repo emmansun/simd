@@ -8,19 +8,17 @@ import (
 
 func eia16Bytes(data []byte, keys []uint32) uint32 {
 	var (
-		XTMP1           Vector128
-		XTMP2           Vector128
-		XTMP3           Vector128
-		XTMP4           Vector128
-		XDATA           Vector128
-		XDIGEST         Vector128
-		KS_L            Vector128
-		KS_M1           Vector128
-		BIT_REV_AND_TAB Vector128
-		BIT_REV_TAB_L   Vector128
-		BIT_REV_TAB_H   Vector128
+		XTMP1         Vector128
+		XTMP2         Vector128
+		XTMP3         Vector128
+		XTMP4         Vector128
+		XDATA         Vector128
+		XDIGEST       Vector128
+		KS_L          Vector128
+		KS_M1         Vector128
+		BIT_REV_TAB_L Vector128
+		BIT_REV_TAB_H Vector128
 	)
-	LXVD2X_UINT64([]uint64{0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f}, &BIT_REV_AND_TAB)
 	LXVD2X_UINT64([]uint64{0x0008040c020a060e, 0x0109050d030b070f}, &BIT_REV_TAB_L)
 	VSPLTISB(4, &XTMP2)
 	VSLB(&BIT_REV_TAB_L, &XTMP2, &BIT_REV_TAB_H)
@@ -31,14 +29,7 @@ func eia16Bytes(data []byte, keys []uint32) uint32 {
 	LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, &XTMP1)
 	VPERM(&XDATA, &XDATA, &XTMP1, &XDATA)
 
-	VAND(&XDATA, &BIT_REV_AND_TAB, &XTMP3)
-	VSPLTISB(4, &XTMP2)
-	VSRW(&XDATA, &XTMP2, &XTMP1)
-	VAND(&XTMP1, &BIT_REV_AND_TAB, &XTMP1)
-
-	VPERM(&BIT_REV_TAB_L, &BIT_REV_TAB_L, &XTMP1, &XTMP1)
-	VPERM(&BIT_REV_TAB_H, &BIT_REV_TAB_H, &XTMP3, &XTMP3)
-	VXOR(&XTMP3, &XTMP1, &XTMP3)
+	VPERMXOR(&BIT_REV_TAB_L, &BIT_REV_TAB_H, &XDATA, &XTMP3)
 
 	// ZUC authentication part, 4x32 data bits
 	// setup data
@@ -113,23 +104,21 @@ func TestEIA16Bytes(t *testing.T) {
 
 func eia256RoundTag8(data []byte, keys []uint32) uint64 {
 	var (
-		XTMP1           Vector128
-		XTMP2           Vector128
-		XTMP3           Vector128
-		XTMP4           Vector128
-		XTMP5           Vector128
-		XTMP6           Vector128
-		XDATA           Vector128
-		XDIGEST         Vector128
-		ZERO            Vector128
-		KS_L            Vector128
-		KS_M1           Vector128
-		KS_M2           Vector128
-		BIT_REV_AND_TAB Vector128
-		BIT_REV_TAB_L   Vector128
-		BIT_REV_TAB_H   Vector128
+		XTMP1         Vector128
+		XTMP2         Vector128
+		XTMP3         Vector128
+		XTMP4         Vector128
+		XTMP5         Vector128
+		XTMP6         Vector128
+		XDATA         Vector128
+		XDIGEST       Vector128
+		ZERO          Vector128
+		KS_L          Vector128
+		KS_M1         Vector128
+		KS_M2         Vector128
+		BIT_REV_TAB_L Vector128
+		BIT_REV_TAB_H Vector128
 	)
-	LXVD2X_UINT64([]uint64{0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f}, &BIT_REV_AND_TAB)
 	LXVD2X_UINT64([]uint64{0x0008040c020a060e, 0x0109050d030b070f}, &BIT_REV_TAB_L)
 	VSPLTISB(4, &XTMP2)
 	VSLB(&BIT_REV_TAB_L, &XTMP2, &BIT_REV_TAB_H)
@@ -140,14 +129,7 @@ func eia256RoundTag8(data []byte, keys []uint32) uint64 {
 	LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, &XTMP1)
 	VPERM(&XDATA, &XDATA, &XTMP1, &XDATA)
 
-	VAND(&XDATA, &BIT_REV_AND_TAB, &XTMP3)
-	VSPLTISB(4, &XTMP2)
-	VSRW(&XDATA, &XTMP2, &XTMP1)
-	VAND(&XTMP1, &BIT_REV_AND_TAB, &XTMP1)
-
-	VPERM(&BIT_REV_TAB_L, &BIT_REV_TAB_L, &XTMP1, &XTMP1)
-	VPERM(&BIT_REV_TAB_H, &BIT_REV_TAB_H, &XTMP3, &XTMP3)
-	VXOR(&XTMP3, &XTMP1, &XTMP3)
+	VPERMXOR(&BIT_REV_TAB_L, &BIT_REV_TAB_H, &XDATA, &XTMP3)
 
 	// ZUC authentication part, 4x32 data bits
 	// setup data
@@ -221,24 +203,22 @@ func TestEIA256_64(t *testing.T) {
 
 func eia256RoundTag16(data []byte, keys []uint32) (uint64, uint64) {
 	var (
-		XTMP1           Vector128
-		XTMP2           Vector128
-		XTMP3           Vector128
-		XTMP4           Vector128
-		XTMP5           Vector128
-		XTMP6           Vector128
-		XDATA           Vector128
-		XDIGEST         Vector128
-		ZERO            Vector128
-		KS_L            Vector128
-		KS_M1           Vector128
-		KS_M2           Vector128
-		KS_H            Vector128
-		BIT_REV_AND_TAB Vector128
-		BIT_REV_TAB_L   Vector128
-		BIT_REV_TAB_H   Vector128
+		XTMP1         Vector128
+		XTMP2         Vector128
+		XTMP3         Vector128
+		XTMP4         Vector128
+		XTMP5         Vector128
+		XTMP6         Vector128
+		XDATA         Vector128
+		XDIGEST       Vector128
+		ZERO          Vector128
+		KS_L          Vector128
+		KS_M1         Vector128
+		KS_M2         Vector128
+		KS_H          Vector128
+		BIT_REV_TAB_L Vector128
+		BIT_REV_TAB_H Vector128
 	)
-	LXVD2X_UINT64([]uint64{0x0f0f0f0f0f0f0f0f, 0x0f0f0f0f0f0f0f0f}, &BIT_REV_AND_TAB)
 	LXVD2X_UINT64([]uint64{0x0008040c020a060e, 0x0109050d030b070f}, &BIT_REV_TAB_L)
 	VSPLTISB(4, &XTMP2)
 	VSLB(&BIT_REV_TAB_L, &XTMP2, &BIT_REV_TAB_H)
@@ -249,14 +229,7 @@ func eia256RoundTag16(data []byte, keys []uint32) (uint64, uint64) {
 	LXVD2X_UINT64([]uint64{0x0706050403020100, 0x0f0e0d0c0b0a0908}, &XTMP1)
 	VPERM(&XDATA, &XDATA, &XTMP1, &XDATA)
 
-	VAND(&XDATA, &BIT_REV_AND_TAB, &XTMP3)
-	VSPLTISB(4, &XTMP2)
-	VSRW(&XDATA, &XTMP2, &XTMP1)
-	VAND(&XTMP1, &BIT_REV_AND_TAB, &XTMP1)
-
-	VPERM(&BIT_REV_TAB_L, &BIT_REV_TAB_L, &XTMP1, &XTMP1)
-	VPERM(&BIT_REV_TAB_H, &BIT_REV_TAB_H, &XTMP3, &XTMP3)
-	VXOR(&XTMP3, &XTMP1, &XTMP3)
+	VPERMXOR(&BIT_REV_TAB_L, &BIT_REV_TAB_H, &XDATA, &XTMP3)
 
 	// ZUC authentication part, 4x32 data bits
 	// setup data

@@ -11,29 +11,9 @@ func VSBOX(src, dst *Vector128) {
 }
 
 func SboxWithAESNI(m1l, m1h, m2l, m2h, x *Vector128) {
-	var (
-		nibble_mask	 = &Vector128{}
-		v_four		 = &Vector128{}
-		y = &Vector128{}
-		z = &Vector128{}
-	)
-	LXVD2X_UINT64([]uint64{0x0F0F0F0F0F0F0F0F, 0x0F0F0F0F0F0F0F0F}, nibble_mask)
-	VSPLTISB(4, v_four)
-	VAND(x, nibble_mask, z)
-	VPERM(m1l, m1l, z, y)
-	VSRD(x, v_four, x) 
-	VAND(x, nibble_mask, z)
-	VPERM(m1h, m1h, z, x)
-	VXOR(y, x, x)
-
+	VPERMXOR(m1h, m1l, x, x)
 	VSBOX(x, x)
-
-	VAND(x, nibble_mask, z)
-	VPERM(m2l, m2l, z, y)
-	VSRD(x, v_four, x)
-	VAND(x, nibble_mask, z)
-	VPERM(m2h, m2h, z, x)
-	VXOR(y, x, x)
+	VPERMXOR(m2h, m2l, x, x)
 }
 
 func GenLookupTable(m uint64, c byte, ltl, lth *Vector128) {

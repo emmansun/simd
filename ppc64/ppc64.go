@@ -250,6 +250,16 @@ func VPERM(src1, src2, perm, dst *Vector128) {
 	copy(dst.bytes[:], tmp.bytes[:])
 }
 
+func VPERMXOR(src1, src2, perm, dst *Vector128) {
+	tmp := &Vector128{}
+	for i := 0; i < 16; i++ {
+		idxHi := perm.bytes[i] >> 4
+		idxLo := perm.bytes[i] & 0x0f
+		tmp.bytes[i] = src1.bytes[idxHi] ^ src2.bytes[idxLo]
+	}
+	copy(dst.bytes[:], tmp.bytes[:])
+}
+
 func XXPERMDI(vA, vB *Vector128, sh byte, dst *Vector128) {
 	sh = sh & 0x0f
 	tmp := Vector128{}
