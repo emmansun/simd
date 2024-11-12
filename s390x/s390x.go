@@ -518,3 +518,67 @@ func VMLEH(src1, src2, dst *Vector128) {
 	}
 	copy(dst.bytes[:], tmp.bytes[:])
 }
+
+func VMRHF(src1, src2, dst *Vector128) {
+	a0 := binary.BigEndian.Uint32(src1.bytes[0:])
+	a1 := binary.BigEndian.Uint32(src1.bytes[4:])
+	b0 := binary.BigEndian.Uint32(src2.bytes[0:])
+	b1 := binary.BigEndian.Uint32(src2.bytes[4:])
+	binary.BigEndian.PutUint32(dst.bytes[0:], a0)
+	binary.BigEndian.PutUint32(dst.bytes[4:], b0)
+	binary.BigEndian.PutUint32(dst.bytes[8:], a1)
+	binary.BigEndian.PutUint32(dst.bytes[12:], b1)
+}
+
+func VMRLF(src1, src2, dst *Vector128) {
+	a0 := binary.BigEndian.Uint32(src1.bytes[8:])
+	a1 := binary.BigEndian.Uint32(src1.bytes[12:])
+	b0 := binary.BigEndian.Uint32(src2.bytes[8:])
+	b1 := binary.BigEndian.Uint32(src2.bytes[12:])
+	binary.BigEndian.PutUint32(dst.bytes[0:], a0)
+	binary.BigEndian.PutUint32(dst.bytes[4:], b0)
+	binary.BigEndian.PutUint32(dst.bytes[8:], a1)
+	binary.BigEndian.PutUint32(dst.bytes[12:], b1)
+}
+
+func VPDI(imm8 byte, src1, src2, dst *Vector128) {
+	d0 := binary.BigEndian.Uint64(src1.bytes[0:])
+	d1 := binary.BigEndian.Uint64(src1.bytes[8:])
+	d2 := binary.BigEndian.Uint64(src2.bytes[0:])
+	d3 := binary.BigEndian.Uint64(src2.bytes[8:])
+	imm8 &= 0xf
+	switch imm8 >> 2 {
+	case 0:
+		binary.BigEndian.PutUint64(dst.bytes[0:], d0)
+	case 1:
+		binary.BigEndian.PutUint64(dst.bytes[0:], d1)
+	case 2:
+		binary.BigEndian.PutUint64(dst.bytes[0:], d2)
+	case 3:
+		binary.BigEndian.PutUint64(dst.bytes[0:], d3)
+	}
+	switch imm8 & 0x3 {
+	case 0:
+		binary.BigEndian.PutUint64(dst.bytes[8:], d0)
+	case 1:
+		binary.BigEndian.PutUint64(dst.bytes[8:], d1)
+	case 2:
+		binary.BigEndian.PutUint64(dst.bytes[8:], d2)
+	case 3:
+		binary.BigEndian.PutUint64(dst.bytes[8:], d3)
+	}
+}
+
+func TransposeMatrix(t0, t1, t2, t3 *Vector128) {
+	var (
+		tmp0, tmp1, tmp2, tmp3 = &Vector128{}, &Vector128{}, &Vector128{}, &Vector128{}
+	)
+	VMRHF(t0, t1, tmp0)
+	VMRHF(t2, t3, tmp1)
+	VMRLF(t0, t1, tmp2)
+	VMRLF(t2, t3, tmp3)
+	VPDI(2, tmp0, tmp1, t0)
+	VPDI(7, tmp0, tmp1, t1)
+	VPDI(2, tmp2, tmp3, t2)
+	VPDI(7, tmp2, tmp3, t3)
+}
