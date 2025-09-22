@@ -405,3 +405,31 @@ func PMADDWD(dst, src *XMM) {
 	}
 	MOVOU(dst, &tmp)
 }
+
+// _mm_blend_epi16
+// Blend packed 16-bit integers from a and b using control mask imm8, and store the results in dst.
+func PBLENDW(dst, a, b *XMM, imm byte) {
+	tmp := XMM{}
+	for i := 0; i < 8; i++ {
+		if (imm>>i)&1 == 1 {
+			copy(tmp.bytes[i*2:], b.bytes[i*2:])
+		} else {
+			copy(tmp.bytes[i*2:], a.bytes[i*2:])
+		}
+	}
+	MOVOU(dst, &tmp)
+}
+
+// _mm_blendv_epi8
+// Blend packed 8-bit integers from a and b using mask, and store the results in dst.
+func PBLENDVB(dst, a, b, mask *XMM) {
+	tmp := XMM{}
+	for i := 0; i < 16; i++ {
+		if mask.bytes[i]&0x80 == 0x80 {
+			tmp.bytes[i] = b.bytes[i]
+		} else {
+			tmp.bytes[i] = a.bytes[i]
+		}
+	}
+	MOVOU(dst, &tmp)
+}
