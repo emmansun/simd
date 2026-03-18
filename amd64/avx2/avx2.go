@@ -63,6 +63,20 @@ func VMOVEDQU_Suint16(dst []uint16, src *YMM) {
 	}
 }
 
+func VMOVEDQU_Suint32(dst []uint32, src *YMM) {
+	_ = dst[7] // bounds check hint to compiler; see golang.org/issue/14808
+	for i := 0; i < 8; i++ {
+		dst[i] = binary.LittleEndian.Uint32(src.Bytes()[i*4:])
+	}
+}
+
+func VMOVEDQU_Suint64(dst []uint64, src *YMM) {
+	_ = dst[3] // bounds check hint to compiler; see golang.org/issue/14808
+	for i := 0; i < 4; i++ {
+		dst[i] = binary.LittleEndian.Uint64(src.Bytes()[i*8:])
+	}
+}
+
 func sign16Extend32(b uint16) int32 {
 	a := uint32(b)
 	a <<= 16
@@ -421,4 +435,141 @@ func VPADDQ(dst, a, b *YMM) {
 		bi := binary.LittleEndian.Uint64(b.Bytes()[i*8:])
 		binary.LittleEndian.PutUint64(dst.Bytes()[i*8:], ai+bi)
 	}
+}
+
+func VPADDD(dst, a, b *YMM) {
+	for i := 0; i < 8; i++ {
+		ai := binary.LittleEndian.Uint32(a.Bytes()[i*4:])
+		bi := binary.LittleEndian.Uint32(b.Bytes()[i*4:])
+		binary.LittleEndian.PutUint32(dst.Bytes()[i*4:], ai+bi)
+	}
+}
+
+// PMULDQ
+// https://www.felixcloutier.com/x86/pmuldq
+func VPMULUDQ(dst, src1, src2 *YMM) {
+	for i := range 4 {
+		a0 := binary.LittleEndian.Uint32(src1.Bytes()[i*8:])
+		b0 := binary.LittleEndian.Uint32(src2.Bytes()[i*8:])
+
+		prod0 := uint64(a0) * uint64(b0)
+
+		binary.LittleEndian.PutUint64(dst.Bytes()[i*8:], prod0)
+	}
+}
+
+// MOVSHDUP
+// https://www.felixcloutier.com/x86/movshdup
+func VMOVSHDUP(dst, src *YMM) {
+	for i := range 2 {
+		base := i * 16
+		srcOdd0 := binary.LittleEndian.Uint32(src.Bytes()[base+4:])
+		srcOdd1 := binary.LittleEndian.Uint32(src.Bytes()[base+12:])
+		binary.LittleEndian.PutUint32(dst.Bytes()[base:], srcOdd0)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+4:], srcOdd0)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+8:], srcOdd1)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+12:], srcOdd1)
+	}
+}
+
+func VMOVSLDUP(dst, src *YMM) {
+	for i := range 2 {
+		base := i * 16
+		srcEven0 := binary.LittleEndian.Uint32(src.Bytes()[base:])
+		srcEven1 := binary.LittleEndian.Uint32(src.Bytes()[base+8:])
+		binary.LittleEndian.PutUint32(dst.Bytes()[base:], srcEven0)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+4:], srcEven0)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+8:], srcEven1)
+		binary.LittleEndian.PutUint32(dst.Bytes()[base+12:], srcEven1)
+	}
+}
+
+// VPBLENDD
+// https://www.felixcloutier.com/x86/vpblendd
+func VPBLENDD(dst, src1, src2 *YMM, imm8 byte) {
+	result := &YMM{}
+	for i := range 8 {
+		if (imm8>>i)&1 == 0 {
+			copy(result.Bytes()[i*4:], src1.Bytes()[i*4:])
+		} else {
+			copy(result.Bytes()[i*4:], src2.Bytes()[i*4:])
+		}
+	}
+	copy(dst.Bytes(), result.Bytes())
+}
+
+// https://www.felixcloutier.com/x86/pcmpgtb:pcmpgtw:pcmpgtd
+func VPCMPGTD(dst, src1, src2 *YMM) {
+	for i := range 8 {
+		a := int32(binary.LittleEndian.Uint32(src1.Bytes()[i*4:]))
+		b := int32(binary.LittleEndian.Uint32(src2.Bytes()[i*4:]))
+		if a > b {
+			binary.LittleEndian.PutUint32(dst.Bytes()[i*4:], 0xffffffff)
+		} else {
+			binary.LittleEndian.PutUint32(dst.Bytes()[i*4:], 0)
+		}
+	}
+}
+
+func VPSUBD(dst, src1, src2 *YMM) {
+	for i := range 8 {
+		a := binary.LittleEndian.Uint32(src1.Bytes()[i*4:])
+		b := binary.LittleEndian.Uint32(src2.Bytes()[i*4:])
+		binary.LittleEndian.PutUint32(dst.Bytes()[i*4:], a-b)
+	}
+}
+
+func VPERM2I128(dst, src1, src2 *YMM, imm8 byte) {
+	result := &YMM{}
+	switch imm8 & 0x3 {
+	case 0:
+		copy(result.Bytes(), src1.Bytes())
+	case 1:
+		copy(result.Bytes(), src1.Bytes()[16:])
+	case 2:
+		copy(result.Bytes(), src2.Bytes())
+	case 3:
+		copy(result.Bytes(), src2.Bytes()[16:])
+	}
+	hi := imm8 >> 4
+	switch hi & 0x3 {
+	case 0:
+		copy(result.Bytes()[16:], src1.Bytes())
+	case 1:
+		copy(result.Bytes()[16:], src1.Bytes()[16:])
+	case 2:
+		copy(result.Bytes()[16:], src2.Bytes())
+	case 3:
+		copy(result.Bytes()[16:], src2.Bytes()[16:])
+	}
+	if imm8&0x4 == 0x4 {
+		for i := 0; i < 16; i++ {
+			result.Bytes()[i] = 0
+		}
+	}
+	if imm8&0x40 == 0x40 {
+		for i := 16; i < 32; i++ {
+			result.Bytes()[i] = 0
+		}
+	}
+
+	copy(dst.Bytes(), result.Bytes())
+}
+
+func VPUNPCKLQDQ(dst, src1, src2 *YMM) {
+	result := &YMM{}
+	copy(result.Bytes()[0:], src1.Bytes()[0:8])
+	copy(result.Bytes()[8:], src2.Bytes()[0:8])
+	copy(result.Bytes()[16:], src1.Bytes()[16:24])
+	copy(result.Bytes()[24:], src2.Bytes()[16:24])
+	copy(dst.Bytes(), result.Bytes())
+}
+
+func VPUNPCKHQDQ(dst, src1, src2 *YMM) {
+	result := &YMM{}
+	copy(result.Bytes()[0:], src1.Bytes()[8:16])
+	copy(result.Bytes()[8:], src2.Bytes()[8:16])
+	copy(result.Bytes()[16:], src1.Bytes()[24:32])
+	copy(result.Bytes()[24:], src2.Bytes()[24:32])
+	copy(dst.Bytes(), result.Bytes())
 }
