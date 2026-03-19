@@ -348,6 +348,7 @@ func shuffle2(in0, in1, out0, out1 *avx2.YMM) {
 	avx2.VPUNPCKHDQ(out1, in0, in1)
 }
 
+// inttLevel0to5AVX2 performs the inverse NTT on the input data in f, from level 0 to level 5 (inclusive).
 func nttLevel2to7AVX2(f []fieldElement, off int) {
 	var ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, zetasYMM, zetasHYMM avx2.YMM
 	fUint32 := make([]uint32, len(f))
@@ -440,7 +441,7 @@ func nttLevel2to7AVX2(f []fieldElement, off int) {
 	butterflyAVX2(&ymm8, &ymm0, &zetasYMM, &zetasYMM, &ymm8, &ymm0)
 	butterflyAVX2(&ymm6, &ymm7, &zetasYMM, &zetasYMM, &ymm6, &ymm7)
 
-	// Input word layout:
+	// Input dword layout:
 	//   ymm3 = [0 1 16 17 | 32 33 48 49]
 	//   ymm1 = [2 3 18 19 | 34 35 50 51]
 	//   ymm8 = [4 5 20 21 | 36 37 52 53]
@@ -449,7 +450,7 @@ func nttLevel2to7AVX2(f []fieldElement, off int) {
 	//   ymm2 = [10 11 26 27 | 42 43 58 59]
 	//   ymm0 = [12 13 28 29 | 44 45 60 61]
 	//   ymm7 = [14 15 30 31 | 46 47 62 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm5 = [0 8 16 24 | 32 40 48 56]
 	//   ymm4 = [1 9 17 25 | 33 41 49 57]
 	//   ymm3 = [2 10 18 26 | 34 42 50 58]
@@ -523,7 +524,7 @@ func nttLevel2to7AVX2(f []fieldElement, off int) {
 	avx2.VPSRLQ(&zetasHYMM, &zetasYMM, 32)
 	butterflyAVX2(&ymm8, &ymm7, &zetasYMM, &zetasHYMM, &ymm8, &ymm7)
 
-	// Input word layout:
+	// Input dword layout:
 	//   ymm5 = [0 8 16 24 | 32 40 48 56]
 	//   ymm4 = [1 9 17 25 | 33 41 49 57]
 	//   ymm3 = [2 10 18 26 | 34 42 50 58]
@@ -532,7 +533,7 @@ func nttLevel2to7AVX2(f []fieldElement, off int) {
 	//   ymm0 = [5 13 21 29 | 37 45 53 61]
 	//   ymm8 = [6 14 22 30 | 38 46 54 62]
 	//   ymm7 = [7 15 23 31 | 39 47 55 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm0 = [0 1 2 3 | 4 5 6 7]
 	//   ymm1 = [8 9 10 11 | 12 13 14 15]
 	//   ymm2 = [16 17 18 19 | 20 21 22 23]
@@ -635,6 +636,7 @@ func inverseButterflyAVX2(even, odd, zetasL, zetasH, outEven, outOdd *avx2.YMM) 
 	fieldsMulEvenOddAVX2(&t0, zetasL, zetasH, outOdd)
 }
 
+// inttLevel0to5AVX2 performs the first 6 levels of the inverse NTT, which includes the matrix transpose to rearrange the input data for better locality in the butterfly operations.
 func inttLevel0to5AVX2(f []fieldElement, off int) {
 	var ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, ymm8, zetasYMM, zetasHYMM, qYMM avx2.YMM
 	avx2.VMOVDQU_Luint32(&qYMM, []uint32{q, q, q, q, q, q, q, q})
@@ -652,7 +654,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	avx2.VMOVDQU_Luint32(&ymm7, fUint32[off*64+7*8:])
 
 	// matrix transpose first, to rearrange the input data for better locality in the butterfly operations.
-	// Input word layout:
+	// Input dword layout:
 	//   ymm0 = [0 1 2 3 | 4 5 6 7]
 	//   ymm1 = [8 9 10 11 | 12 13 14 15]
 	//   ymm2 = [16 17 18 19 | 20 21 22 23]
@@ -661,7 +663,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	//   ymm5 = [40 41 42 43 | 44 45 46 47]
 	//   ymm6 = [48 49 50 51 | 52 53 54 55]
 	//   ymm7 = [56 57 58 59 | 60 61 62 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm5 = [0 8 16 24 | 32 40 48 56]
 	//   ymm4 = [1 9 17 25 | 33 41 49 57]
 	//   ymm3 = [2 10 18 26 | 34 42 50 58]
@@ -685,7 +687,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	shuffle2(&ymm8, &ymm0, &ymm1, &ymm0)
 	shuffle2(&ymm6, &ymm7, &ymm8, &ymm7)
 
-	// level 0
+	// level 0: offset = 1, step = 128
 	avx2.VMOVDQU_Luint32(&zetasHYMM, []uint32{
 		uint32(zetasMontgomeryNegAVX2[296-8-8*off]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+1]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+2]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+3]),
 		uint32(zetasMontgomeryNegAVX2[296-8-8*off+4]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+5]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+6]), uint32(zetasMontgomeryNegAVX2[296-8-8*off+7]),
@@ -718,7 +720,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	avx2.VPSRLQ(&zetasYMM, &zetasHYMM, 32)
 	inverseButterflyAVX2(&ymm8, &ymm7, &zetasYMM, &zetasHYMM, &ymm8, &ymm7)
 
-	// level 1
+	// level 1: offset = 2, step = 64
 	avx2.VMOVDQU_Luint32(&zetasHYMM, []uint32{
 		uint32(zetasMontgomeryNegAVX2[168-8-8*off]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+1]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+2]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+3]),
 		uint32(zetasMontgomeryNegAVX2[168-8-8*off+4]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+5]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+6]), uint32(zetasMontgomeryNegAVX2[168-8-8*off+7]),
@@ -737,7 +739,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	inverseButterflyAVX2(&ymm1, &ymm8, &zetasYMM, &zetasHYMM, &ymm1, &ymm8)
 	inverseButterflyAVX2(&ymm0, &ymm7, &zetasYMM, &zetasHYMM, &ymm0, &ymm7)
 
-	// level 2
+	// level 2: offset = 4, step = 32
 	avx2.VMOVDQU_Luint32(&zetasHYMM, []uint32{
 		uint32(zetasMontgomeryNegAVX2[104-8-8*off]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+1]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+2]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+3]),
 		uint32(zetasMontgomeryNegAVX2[104-8-8*off+4]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+5]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+6]), uint32(zetasMontgomeryNegAVX2[104-8-8*off+7]),
@@ -749,8 +751,8 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	inverseButterflyAVX2(&ymm3, &ymm8, &zetasYMM, &zetasHYMM, &ymm3, &ymm8)
 	inverseButterflyAVX2(&ymm2, &ymm7, &zetasYMM, &zetasHYMM, &ymm2, &ymm7)
 
-	// level 3
-	// Input word layout:
+	// level 3: offset = 8, step = 16
+	// Input dword layout:
 	//   ymm5 = [0 8 16 24 | 32 40 48 56]
 	//   ymm4 = [1 9 17 25 | 33 41 49 57]
 	//   ymm3 = [2 10 18 26 | 34 42 50 58]
@@ -759,7 +761,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	//   ymm0 = [5 13 21 29 | 37 45 53 61]
 	//   ymm8 = [6 14 22 30 | 38 46 54 62]
 	//   ymm7 = [7 15 23 31 | 39 47 55 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm6 = [0 1 16 17 | 32 33 48 49]
 	//   ymm4 = [8 9 24 25 | 40 41 56 57]
 	//   ymm5 = [2 3 18 19 | 34 35 50 51]
@@ -785,8 +787,8 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	inverseButterflyAVX2(&ymm3, &ymm0, &zetasYMM, &zetasHYMM, &ymm3, &ymm0)
 	inverseButterflyAVX2(&ymm1, &ymm7, &zetasYMM, &zetasHYMM, &ymm1, &ymm7)
 
-	// level 4
-	// Input word layout:
+	// level 4: offset = 16, step = 8
+	// Input dword layout:
 	//   ymm6 = [0 1 16 17 | 32 33 48 49]
 	//   ymm4 = [8 9 24 25 | 40 41 56 57]
 	//   ymm5 = [2 3 18 19 | 34 35 50 51]
@@ -795,7 +797,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	//   ymm0 = [12 13 28 29 | 44 45 60 61]
 	//   ymm1 = [6 7 22 23 | 38 39 54 55]
 	//   ymm7 = [14 15 30 31 | 46 47 62 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm8 = [0 1 2 3 | 32 33 34 35]
 	//   ymm5 = [16 17 18 19 | 48 49 50 51]
 	//   ymm6 = [4 5 6 7 | 36 37 38 39]
@@ -819,8 +821,8 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	inverseButterflyAVX2(&ymm3, &ymm2, &zetasYMM, &zetasYMM, &ymm3, &ymm2)
 	inverseButterflyAVX2(&ymm4, &ymm7, &zetasYMM, &zetasYMM, &ymm4, &ymm7)
 
-	// level 5
-	// Input word layout:
+	// level 5: offset = 32, step = 4
+	// Input dword layout:
 	//   ymm8 = [0 1 2 3 | 32 33 34 35]
 	//   ymm5 = [16 17 18 19 | 48 49 50 51]
 	//   ymm6 = [4 5 6 7 | 36 37 38 39]
@@ -829,7 +831,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	//   ymm2 = [24 25 26 27 | 56 57 58 59]
 	//   ymm4 = [12 13 14 15 | 44 45 46 47]
 	//   ymm7 = [28 29 30 31 | 60 61 62 63]
-	// Required word layout:
+	// Required dword layout:
 	//   ymm0 = [0 1 2 3 | 4 5 6 7]
 	//   ymm6 = [32 33 34 35 | 36 37 38 39]
 	//   ymm8 = [8 9 10 11 | 12 13 14 15]
@@ -865,6 +867,7 @@ func inttLevel0to5AVX2(f []fieldElement, off int) {
 	}
 }
 
+// inttLevel6to7AVX2 performs the inverse NTT for levels 6 to 7 using AVX2 instructions.
 func inttLevel6to7AVX2(f []fieldElement, off int) {
 	var ymm0, ymm1, ymm2, ymm3, ymm4, ymm5, ymm6, ymm7, qYMM, zetasYMM avx2.YMM
 	avx2.VMOVDQU_Luint32(&qYMM, []uint32{q, q, q, q, q, q, q, q})
@@ -881,7 +884,7 @@ func inttLevel6to7AVX2(f []fieldElement, off int) {
 	avx2.VMOVDQU_Luint32(&ymm6, fUint32[off*8+6*32:])
 	avx2.VMOVDQU_Luint32(&ymm7, fUint32[off*8+7*32:])
 
-	// level 6
+	// level 6: offset = 64, step = 2
 	zeta3 := uint32(zetasMontgomeryAVX2[3])
 	avx2.VMOVDQU_Luint32(&zetasYMM, []uint32{zeta3, zeta3, zeta3, zeta3, zeta3, zeta3, zeta3, zeta3})
 	avx2.VPSUBD(&zetasYMM, &qYMM, &zetasYMM)
@@ -894,7 +897,7 @@ func inttLevel6to7AVX2(f []fieldElement, off int) {
 	inverseButterflyAVX2(&ymm4, &ymm6, &zetasYMM, &zetasYMM, &ymm4, &ymm6)
 	inverseButterflyAVX2(&ymm5, &ymm7, &zetasYMM, &zetasYMM, &ymm5, &ymm7)
 
-	// level 7
+	// level 7: offset = 128, step = 1
 	zeta1 := uint32(zetasMontgomeryAVX2[1])
 	avx2.VMOVDQU_Luint32(&zetasYMM, []uint32{zeta1, zeta1, zeta1, zeta1, zeta1, zeta1, zeta1, zeta1})
 	avx2.VPSUBD(&zetasYMM, &qYMM, &zetasYMM)
