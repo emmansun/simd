@@ -556,12 +556,38 @@ func VPERM2I128(dst, src1, src2 *YMM, imm8 byte) {
 	copy(dst.Bytes(), result.Bytes())
 }
 
+func VPUNPCKLDQ(dst, src1, src2 *YMM) {
+	result := &YMM{}
+	copy(result.Bytes()[0:], src1.Bytes()[0:4])
+	copy(result.Bytes()[4:], src2.Bytes()[0:4])
+	copy(result.Bytes()[8:], src1.Bytes()[8:12])
+	copy(result.Bytes()[12:], src2.Bytes()[8:12])
+	copy(result.Bytes()[16:], src1.Bytes()[16:20])
+	copy(result.Bytes()[20:], src2.Bytes()[16:20])
+	copy(result.Bytes()[24:], src1.Bytes()[24:28])
+	copy(result.Bytes()[28:], src2.Bytes()[24:28])
+	copy(dst.Bytes(), result.Bytes())
+}
+
 func VPUNPCKLQDQ(dst, src1, src2 *YMM) {
 	result := &YMM{}
 	copy(result.Bytes()[0:], src1.Bytes()[0:8])
 	copy(result.Bytes()[8:], src2.Bytes()[0:8])
 	copy(result.Bytes()[16:], src1.Bytes()[16:24])
 	copy(result.Bytes()[24:], src2.Bytes()[16:24])
+	copy(dst.Bytes(), result.Bytes())
+}
+
+func VPUNPCKHDQ(dst, src1, src2 *YMM) {
+	result := &YMM{}
+	copy(result.Bytes()[0:], src1.Bytes()[4:8])
+	copy(result.Bytes()[4:], src2.Bytes()[4:8])
+	copy(result.Bytes()[8:], src1.Bytes()[12:16])
+	copy(result.Bytes()[12:], src2.Bytes()[12:16])
+	copy(result.Bytes()[16:], src1.Bytes()[20:24])
+	copy(result.Bytes()[20:], src2.Bytes()[20:24])
+	copy(result.Bytes()[24:], src1.Bytes()[28:32])
+	copy(result.Bytes()[28:], src2.Bytes()[28:32])
 	copy(dst.Bytes(), result.Bytes())
 }
 
