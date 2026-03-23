@@ -344,8 +344,10 @@ func shuffle4(in0, in1, out0, out1 *avx2.YMM) {
 }
 
 func shuffle2(in0, in1, out0, out1 *avx2.YMM) {
-	avx2.VPUNPCKLDQ(out0, in0, in1)
-	avx2.VPUNPCKHDQ(out1, in0, in1)
+	avx2.VPSLLQ(out0, in1, 32)
+	avx2.VPBLENDD(out0, in0, out0, 0xAA)
+	avx2.VPSRLQ(in0, in0, 32)
+	avx2.VPBLENDD(out1, in0, in1, 0xAA)
 }
 
 // inttLevel0to5AVX2 performs the inverse NTT on the input data in f, from level 0 to level 5 (inclusive).
